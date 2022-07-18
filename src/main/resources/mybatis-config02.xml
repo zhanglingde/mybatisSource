@@ -1,0 +1,33 @@
+﻿<!DOCTYPE configuration
+		PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<!-- 和spring整合后 environments配置将废除-->
+	<environments default="development">
+		<environment id="development">
+			<!-- 常见的事务管理
+			JDBC   使用jdbc来实现管理事务（默认自动提交的事务，通过con.setAutoCommit来取消自动提交）
+			MANAGED  不使用任何方式管理事务，交给外部容器管理，比如spring容器
+			-->
+			<transactionManager type="JDBC"/>
+			<!-- 常见的datasource 类型
+			JNDI  采用JNDI方式使用数据库连接池来管理数据库连接  相当于第二阶段的JNDI数据连接池
+			UNPOOlED  不使用数据连接池链管理数据库连接池     相当于第一阶段JDBC
+			POOLED  采用mybatis自带的数据连接池来管理数据库连接
+			 -->
+			<dataSource type="POOLED">
+				<!--  -->
+				<property name="driver" value="com.mysql.jdbc.Driver"/>
+				<property name="url" value="jdbc:mysql://127.0.0.1:3306/test"/>
+				<property name="username" value="root"/>
+				<property name="password" value="root"/>
+			</dataSource>
+		</environment>
+	</environments>
+
+	<!-- 加载mapper.xml -->
+	<mappers>
+		<mapper resource="com/ling/test02/mapper/UserMapper.xml"/>
+	</mappers>
+
+</configuration>

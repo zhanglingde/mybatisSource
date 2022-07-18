@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+		PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace命名空间，为了对sql语句进行隔离，方便管理 ，mapper开发dao方式，使用namespace有特殊作用 -->
+<mapper namespace="com.ling.test02.mapper.UserMapper">
+	<!-- dao模式映射到接口的名称，不是dao模式直接映射到包名就好（反射读取路径） -->
+	<!-- 在mapper.xml文件中配置很多的sql语句，执行每个sql语句时，封装为MappedStatement对象mapper.xml以statement为单位管理sql语句
+	 -->
+	<insert id="addUser" parameterType="com.ling.test02.entity.User">
+		insert into user(user_name, user_pwd, user_age)
+		values (#{user_name}, #{user_pwd}, #{user_age})
+	</insert>
+
+	<!-- 如果传入的参数是一个基本数据类型，那么除了声明该类型以外，sql代码的传入参数的名称可以随便定义 -->
+
+	<delete id="deleteById" parameterType="Integer">  <!-- 别名  Integer integer int java.lang.Integer -->
+		delete from user where user_id=#{abc}
+	</delete>
+
+
+	<select id="queryById" parameterType="int" resultType="com.ling.test02.entity.User">
+		select *
+		from user
+		where user_id = #{userid}
+	</select>
+
+	<!-- 即使返回的是集合类型的数据，那么这边依旧使用resulttype，并且其值为集合中的数据类型 -->
+	<select id="queryAllUser" resultType="com.ling.test02.entity.User">
+		select *
+		from user
+	</select>
+
+	<!-- 如果传入的多个参数，那么parameterType是不用写的 -->
+	<select id="checkLogin" resultType="com.ling.test02.entity.User">
+		select *
+		from user
+		where user_name = #{0}
+		  and user_pwd = #{1}
+	</select>
+
+	<!-- 如果传入的一个String参数，那么变量名可以随便写 -->
+	<select id="queryByName" parameterType="String" resultType="com.ling.test02.entity.User">
+		select *
+		from user
+		where user_name = '${_parameter}'
+	</select>
+
+	<!-- 模糊查询，如果采用#方式，会报参数传入异常 ，考虑使用$结合_parameter使用 -->
+	<select id="queryByKey" parameterType="String" resultType="com.ling.test02.entity.User">
+		select *
+		from user
+		where user_name like '%${_parameter}%'
+	</select>
+
+</mapper>
