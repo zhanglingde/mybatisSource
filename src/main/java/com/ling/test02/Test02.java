@@ -29,21 +29,21 @@ public class Test02 {
         UserMapper userMapper = ss.getMapper(UserMapper.class);
 
         // 新增
-        // User user = new User();
-        // user.setUser_age(14);
-        // user.setUser_name("zhangling");
-        // user.setUser_pwd("123");
-        // if (userMapper.addUser(user)) {
-        //     System.out.println("添加成功");
-        // }
+        User user = new User();
+        user.setUser_age(14);
+        user.setUser_name("zhangling");
+        user.setUser_pwd("123");
+        if (userMapper.addUser(user)) {
+            System.out.println("添加成功");
+        }
 
         // User user = userMapper.queryById(1);
         // System.out.println("user = " + user);
 
-        userMapper.deleteById(1);
-
-        List<User> users = userMapper.queryAllUser();
-        System.out.println("users = " + users);
+        // userMapper.deleteById(1);
+        //
+        // List<User> users = userMapper.queryAllUser();
+        // System.out.println("users = " + users);
 
         // User existUser = userMapper.queryByName("哈哈");
         // // 模糊查询
