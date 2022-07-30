@@ -36,110 +36,129 @@ import org.apache.ibatis.transaction.managed.ManagedTransactionFactory;
  */
 public class DefaultSqlSessionFactory implements SqlSessionFactory {
 
-  private final Configuration configuration;
+    private final Configuration configuration;
 
-  public DefaultSqlSessionFactory(Configuration configuration) {
-    this.configuration = configuration;
-  }
-
-  @Override
-  public SqlSession openSession() {
-    return openSessionFromDataSource(configuration.getDefaultExecutorType(), null, false);
-  }
-
-  @Override
-  public SqlSession openSession(boolean autoCommit) {
-    return openSessionFromDataSource(configuration.getDefaultExecutorType(), null, autoCommit);
-  }
-
-  @Override
-  public SqlSession openSession(ExecutorType execType) {
-    return openSessionFromDataSource(execType, null, false);
-  }
-
-  @Override
-  public SqlSession openSession(TransactionIsolationLevel level) {
-    return openSessionFromDataSource(configuration.getDefaultExecutorType(), level, false);
-  }
-
-  @Override
-  public SqlSession openSession(ExecutorType execType, TransactionIsolationLevel level) {
-    return openSessionFromDataSource(execType, level, false);
-  }
-
-  @Override
-  public SqlSession openSession(ExecutorType execType, boolean autoCommit) {
-    return openSessionFromDataSource(execType, null, autoCommit);
-  }
-
-  @Override
-  public SqlSession openSession(Connection connection) {
-    return openSessionFromConnection(configuration.getDefaultExecutorType(), connection);
-  }
-
-  @Override
-  public SqlSession openSession(ExecutorType execType, Connection connection) {
-    return openSessionFromConnection(execType, connection);
-  }
-
-  @Override
-  public Configuration getConfiguration() {
-    return configuration;
-  }
-
-  private SqlSession openSessionFromDataSource(ExecutorType execType, TransactionIsolationLevel level, boolean autoCommit) {
-    Transaction tx = null;
-    try {
-      final Environment environment = configuration.getEnvironment();
-      final TransactionFactory transactionFactory = getTransactionFactoryFromEnvironment(environment);
-      tx = transactionFactory.newTransaction(environment.getDataSource(), level, autoCommit);
-      final Executor executor = configuration.newExecutor(tx, execType);
-      return new DefaultSqlSession(configuration, executor, autoCommit);
-    } catch (Exception e) {
-      closeTransaction(tx); // may have fetched a connection so lets call close()
-      throw ExceptionFactory.wrapException("Error opening session.  Cause: " + e, e);
-    } finally {
-      ErrorContext.instance().reset();
+    public DefaultSqlSessionFactory(Configuration configuration) {
+        this.configuration = configuration;
     }
-  }
 
-  private SqlSession openSessionFromConnection(ExecutorType execType, Connection connection) {
-    try {
-      boolean autoCommit;
-      try {
-        autoCommit = connection.getAutoCommit();
-      } catch (SQLException e) {
-        // Failover to true, as most poor drivers
-        // or databases won't support transactions
-        autoCommit = true;
-      }
-      final Environment environment = configuration.getEnvironment();
-      final TransactionFactory transactionFactory = getTransactionFactoryFromEnvironment(environment);
-      final Transaction tx = transactionFactory.newTransaction(connection);
-      final Executor executor = configuration.newExecutor(tx, execType);
-      return new DefaultSqlSession(configuration, executor, autoCommit);
-    } catch (Exception e) {
-      throw ExceptionFactory.wrapException("Error opening session.  Cause: " + e, e);
-    } finally {
-      ErrorContext.instance().reset();
+    /**
+     * 最终都会调用 2 种方法：openSessionFromDataSource,openSessionFromConnection
+     * 以下6个方法都会调用openSessionFromDataSource
+     * @return
+     */
+    @Override
+    public SqlSession openSession() {
+        // 获取默认的执行器类型
+        return openSessionFromDataSource(configuration.getDefaultExecutorType(), null, false);
     }
-  }
 
-  private TransactionFactory getTransactionFactoryFromEnvironment(Environment environment) {
-    if (environment == null || environment.getTransactionFactory() == null) {
-      return new ManagedTransactionFactory();
+    @Override
+    public SqlSession openSession(boolean autoCommit) {
+        return openSessionFromDataSource(configuration.getDefaultExecutorType(), null, autoCommit);
     }
-    return environment.getTransactionFactory();
-  }
 
-  private void closeTransaction(Transaction tx) {
-    if (tx != null) {
-      try {
-        tx.close();
-      } catch (SQLException ignore) {
-        // Intentionally ignore. Prefer previous error.
-      }
+    @Override
+    public SqlSession openSession(ExecutorType execType) {
+        return openSessionFromDataSource(execType, null, false);
     }
-  }
+
+    @Override
+    public SqlSession openSession(TransactionIsolationLevel level) {
+        return openSessionFromDataSource(configuration.getDefaultExecutorType(), level, false);
+    }
+
+    @Override
+    public SqlSession openSession(ExecutorType execType, TransactionIsolationLevel level) {
+        return openSessionFromDataSource(execType, level, false);
+    }
+
+
+    /**
+     * 以下2个方法都会调用 openSessionFromConnection
+     * @param execType
+     * @param autoCommit
+     * @return
+     */
+    @Override
+    public SqlSession openSession(ExecutorType execType, boolean autoCommit) {
+        return openSessionFromDataSource(execType, null, autoCommit);
+    }
+
+    @Override
+    public SqlSession openSession(Connection connection) {
+        return openSessionFromConnection(configuration.getDefaultExecutorType(), connection);
+    }
+
+    @Override
+    public SqlSession openSession(ExecutorType execType, Connection connection) {
+        return openSessionFromConnection(execType, connection);
+    }
+
+    @Override
+    public Configuration getConfiguration() {
+        return configuration;
+    }
+
+    private SqlSession openSessionFromDataSource(ExecutorType execType, TransactionIsolationLevel level, boolean autoCommit) {
+        Transaction tx = null;
+        try {
+            final Environment environment = configuration.getEnvironment();
+            final TransactionFactory transactionFactory = getTransactionFactoryFromEnvironment(environment);
+            tx = transactionFactory.newTransaction(environment.getDataSource(), level, autoCommit);
+            // 根据配置创建 Executor 对象
+            final Executor executor = configuration.newExecutor(tx, execType);
+            return new DefaultSqlSession(configuration, executor, autoCommit);
+        } catch (Exception e) {
+            // 如果打开事务出错，则关闭它
+            closeTransaction(tx); // may have fetched a connection so lets call close()
+            throw ExceptionFactory.wrapException("Error opening session.  Cause: " + e, e);
+        } finally {
+            // 清空上下文
+            ErrorContext.instance().reset();
+        }
+    }
+
+    private SqlSession openSessionFromConnection(ExecutorType execType, Connection connection) {
+        try {
+            boolean autoCommit;
+            try {
+                autoCommit = connection.getAutoCommit();
+            } catch (SQLException e) {
+                // Failover to true, as most poor drivers
+                // or databases won't support transactions
+                // 当前数据库驱动提供的连接不支持事务，则可能会抛出异常
+                autoCommit = true;
+            }
+            final Environment environment = configuration.getEnvironment();
+            final TransactionFactory transactionFactory = getTransactionFactoryFromEnvironment(environment);
+            final Transaction tx = transactionFactory.newTransaction(connection);
+            // 根据配置创建执行器
+            final Executor executor = configuration.newExecutor(tx, execType);
+            return new DefaultSqlSession(configuration, executor, autoCommit);
+        } catch (Exception e) {
+            throw ExceptionFactory.wrapException("Error opening session.  Cause: " + e, e);
+        } finally {
+            ErrorContext.instance().reset();
+        }
+    }
+
+    private TransactionFactory getTransactionFactoryFromEnvironment(Environment environment) {
+        // 如果没有配置事务工厂，则返回托管事务工厂
+        if (environment == null || environment.getTransactionFactory() == null) {
+            return new ManagedTransactionFactory();
+        }
+        return environment.getTransactionFactory();
+    }
+
+    private void closeTransaction(Transaction tx) {
+        if (tx != null) {
+            try {
+                tx.close();
+            } catch (SQLException ignore) {
+                // Intentionally ignore. Prefer previous error.
+            }
+        }
+    }
 
 }

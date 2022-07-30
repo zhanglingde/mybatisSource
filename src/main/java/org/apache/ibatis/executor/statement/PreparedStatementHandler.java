@@ -33,65 +33,77 @@ import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 
 /**
+ * 预处理语句处理器（PREPARED）
+ *
  * @author Clinton Begin
  */
 public class PreparedStatementHandler extends BaseStatementHandler {
 
-  public PreparedStatementHandler(Executor executor, MappedStatement mappedStatement, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) {
-    super(executor, mappedStatement, parameter, rowBounds, resultHandler, boundSql);
-  }
-
-  @Override
-  public int update(Statement statement) throws SQLException {
-    PreparedStatement ps = (PreparedStatement) statement;
-    ps.execute();
-    int rows = ps.getUpdateCount();
-    Object parameterObject = boundSql.getParameterObject();
-    KeyGenerator keyGenerator = mappedStatement.getKeyGenerator();
-    keyGenerator.processAfter(executor, mappedStatement, ps, parameterObject);
-    return rows;
-  }
-
-  @Override
-  public void batch(Statement statement) throws SQLException {
-    PreparedStatement ps = (PreparedStatement) statement;
-    ps.addBatch();
-  }
-
-  @Override
-  public <E> List<E> query(Statement statement, ResultHandler resultHandler) throws SQLException {
-    PreparedStatement ps = (PreparedStatement) statement;
-    ps.execute();
-    return resultSetHandler.handleResultSets(ps);
-  }
-
-  @Override
-  public <E> Cursor<E> queryCursor(Statement statement) throws SQLException {
-    PreparedStatement ps = (PreparedStatement) statement;
-    ps.execute();
-    return resultSetHandler.handleCursorResultSets(ps);
-  }
-
-  @Override
-  protected Statement instantiateStatement(Connection connection) throws SQLException {
-    String sql = boundSql.getSql();
-    if (mappedStatement.getKeyGenerator() instanceof Jdbc3KeyGenerator) {
-      String[] keyColumnNames = mappedStatement.getKeyColumns();
-      if (keyColumnNames == null) {
-        return connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
-      } else {
-        return connection.prepareStatement(sql, keyColumnNames);
-      }
-    } else if (mappedStatement.getResultSetType() == ResultSetType.DEFAULT) {
-      return connection.prepareStatement(sql);
-    } else {
-      return connection.prepareStatement(sql, mappedStatement.getResultSetType().getValue(), ResultSet.CONCUR_READ_ONLY);
+    public PreparedStatementHandler(Executor executor, MappedStatement mappedStatement, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) {
+        super(executor, mappedStatement, parameter, rowBounds, resultHandler, boundSql);
     }
-  }
 
-  @Override
-  public void parameterize(Statement statement) throws SQLException {
-    parameterHandler.setParameters((PreparedStatement) statement);
-  }
+    @Override
+    public int update(Statement statement) throws SQLException {
+        // 调用 PreparedStatement.execute 和 PreparedStatement.getUpdateCount
+        PreparedStatement ps = (PreparedStatement) statement;
+        ps.execute();
+        int rows = ps.getUpdateCount();
+        Object parameterObject = boundSql.getParameterObject();
+        KeyGenerator keyGenerator = mappedStatement.getKeyGenerator();
+        keyGenerator.processAfter(executor, mappedStatement, ps, parameterObject);
+        return rows;
+    }
+
+    @Override
+    public void batch(Statement statement) throws SQLException {
+        PreparedStatement ps = (PreparedStatement) statement;
+        ps.addBatch();
+    }
+
+    @Override
+    public <E> List<E> query(Statement statement, ResultHandler resultHandler) throws SQLException {
+        PreparedStatement ps = (PreparedStatement) statement;
+        // 调用数据库执行查询
+        ps.execute();
+        // 返回值设置
+        return resultSetHandler.handleResultSets(ps);
+    }
+
+    @Override
+    public <E> Cursor<E> queryCursor(Statement statement) throws SQLException {
+        PreparedStatement ps = (PreparedStatement) statement;
+        ps.execute();
+        return resultSetHandler.handleCursorResultSets(ps);
+    }
+
+    @Override
+    protected Statement instantiateStatement(Connection connection) throws SQLException {
+        // 获取绑定的 sql 语句
+        String sql = boundSql.getSql();
+        // 根据 keyGenerator 字段的值，创建 PreparedStatement 对象
+        if (mappedStatement.getKeyGenerator() instanceof Jdbc3KeyGenerator) {
+            String[] keyColumnNames = mappedStatement.getKeyColumns();
+            if (keyColumnNames == null) {
+                // 返回数据库生成的主键
+                return connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
+            } else {
+                // 在 insert 语句执行完成之后，会将 keyColumnNames 指定的列返回
+                return connection.prepareStatement(sql, keyColumnNames);
+            }
+        } else if (mappedStatement.getResultSetType() == ResultSetType.DEFAULT) {
+            // 创建普通的 PreparedStatement 对象
+            return connection.prepareStatement(sql);
+        } else {
+            // 设置结果集是否可以滚动以及其游标是否可以上下移动，设置结果集是否可更新
+            return connection.prepareStatement(sql, mappedStatement.getResultSetType().getValue(), ResultSet.CONCUR_READ_ONLY);
+        }
+    }
+
+    @Override
+    public void parameterize(Statement statement) throws SQLException {
+        // 调用 ParameterHandler.setParameters 处理占位符
+        parameterHandler.setParameters((PreparedStatement) statement);
+    }
 
 }

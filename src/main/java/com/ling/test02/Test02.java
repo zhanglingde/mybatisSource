@@ -22,11 +22,11 @@ public class Test02 {
         // 2. 创建sql会话工厂
         SqlSessionFactory ssf = new SqlSessionFactoryBuilder().build(is);
 
-        // 3. 创建sql会话
-        SqlSession ss = ssf.openSession();
+        // 3. 创建sql会话（还未开启 session）
+        SqlSession sqlSession = ssf.openSession();
 
         // 通过这个方法反射得到接口的实例对象
-        UserMapper userMapper = ss.getMapper(UserMapper.class);
+        UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
 
         // 新增
         User user = new User();
@@ -50,8 +50,8 @@ public class Test02 {
         // List<User> list = userMapper.queryByKey("zh");
         // System.out.println("list = " + list);
 
-        ss.commit();
-        ss.close();
+        sqlSession.commit();
+        sqlSession.close();
     }
 
 
