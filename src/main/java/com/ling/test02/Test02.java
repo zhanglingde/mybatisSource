@@ -22,23 +22,23 @@ public class Test02 {
         // 2. 创建sql会话工厂
         SqlSessionFactory ssf = new SqlSessionFactoryBuilder().build(is);
 
-        // 3. 创建sql会话（还未开启 session）
+        // 3. 获取数据库的会话，创建出数据库连接的会话对象（事务工厂、事务对象，执行器，如果有插件会进行插件的解析）（还未开启 session）
         SqlSession sqlSession = ssf.openSession();
 
-        // 通过这个方法反射得到接口的实例对象
+        // 通过这个方法反射得到接口的实例对象（mapperRegistry.knowMapper）
         UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
 
         // 新增
-        User user = new User();
-        user.setUser_age(14);
-        user.setUser_name("zhangling");
-        user.setUser_pwd("123");
-        if (userMapper.addUser(user)) {
-            System.out.println("添加成功");
-        }
+        // User user = new User();
+        // user.setUser_age(14);
+        // user.setUser_name("zhangling");
+        // user.setUser_pwd("123");
+        // if (userMapper.addUser(user)) {
+        //     System.out.println("添加成功");
+        // }
 
-        // User user = userMapper.queryById(1);
-        // System.out.println("user = " + user);
+        User user = userMapper.queryById(2);
+        System.out.println("user = " + user);
 
         // userMapper.deleteById(1);
         //

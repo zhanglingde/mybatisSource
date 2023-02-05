@@ -118,7 +118,7 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
                         throw new RuntimeException(e);
                     }
                 } else {
-                    // 如果调用的普通方法，则创建一个PlainMethodInvoker并放入缓存，其中MapperMethod保存对应接口方法的SQL以及入参和出参的数据类型等信息
+                    // 如果调用的普通方法，则创建一个PlainMethodInvoker并放入缓存，其中 MapperMethod 保存对应接口方法的SQL以及入参和出参的数据类型等信息
                     return new PlainMethodInvoker(new MapperMethod(mapperInterface, method, sqlSession.getConfiguration()));
                 }
             });

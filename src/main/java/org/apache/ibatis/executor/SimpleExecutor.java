@@ -60,7 +60,7 @@ public class SimpleExecutor extends BaseExecutor {
             Configuration configuration = ms.getConfiguration();
             // 创建 StatementHandler，实际返回的是 RoutingStatementHandler 对象
             StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, resultHandler, boundSql);
-            // 完成 StatementHandler 的创建和初始化
+            // 完成 Statement 的创建和初始化
             stmt = prepareStatement(handler, ms.getStatementLog());
             // 调用 query 方法执行 sql 语句，并通过 ResultSetHandler 完成结果集的映射
             return handler.query(stmt, resultHandler);

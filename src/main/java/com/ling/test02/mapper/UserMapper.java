@@ -7,7 +7,6 @@ import java.util.List;
 public interface UserMapper {
 
     // 在mybatis dao模式下，不能使用方法重载
-
     boolean addUser(User user);
 
     int deleteById(Integer userid);

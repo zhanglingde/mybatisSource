@@ -273,6 +273,7 @@ public class MapperMethod {
         public SqlCommand(Configuration configuration, Class<?> mapperInterface, Method method) {
             final String methodName = method.getName();
             final Class<?> declaringClass = method.getDeclaringClass();
+            // 解析 sql 语句
             MappedStatement ms = resolveMappedStatement(mapperInterface, methodName, declaringClass,
                     configuration);
             if (ms == null) {
