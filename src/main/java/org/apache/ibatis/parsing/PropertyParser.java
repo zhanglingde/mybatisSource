@@ -50,11 +50,14 @@ public class PropertyParser {
     // Prevent Instantiation
   }
 
-  public static String parse(String string, Properties variables) {
-    VariableTokenHandler handler = new VariableTokenHandler(variables);
-    GenericTokenParser parser = new GenericTokenParser("${", "}", handler);
-    return parser.parse(string);
-  }
+    public static String parse(String string, Properties variables) {
+        // 1. 创建 VariableTokenHandler 对象
+        VariableTokenHandler handler = new VariableTokenHandler(variables);
+        // 2. 创建 GenericTokenParser 对象
+        GenericTokenParser parser = new GenericTokenParser("${", "}", handler);
+        // 3. 执行解析
+        return parser.parse(string);
+    }
 
   private static class VariableTokenHandler implements TokenHandler {
     private final Properties variables;

@@ -41,15 +41,32 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 /**
+ * 基于Java XPath 解析器，用于解析 MyBatis 的 `mybatis-config.xml`和 Mapper.xml 等 XML 配置文件
+ *
  * @author Clinton Begin
  * @author Kazuki Shimizu
  */
 public class XPathParser {
 
+    /**
+     * XML Document 对象
+     */
     private final Document document;
+    /**
+     * 是否检验
+     */
     private boolean validation;
+    /**
+     * XML实体解析器
+     */
     private EntityResolver entityResolver;
+    /**
+     * 变量对象
+     */
     private Properties variables;
+    /**
+     * Java XPath 对象
+     */
     private XPath xpath;
 
     public XPathParser(String xml) {
@@ -212,10 +229,12 @@ public class XPathParser {
     }
 
     public XNode evalNode(Object root, String expression) {
+        // 1. 获得 Node 对象
         Node node = (Node) evaluate(expression, root, XPathConstants.NODE);
         if (node == null) {
             return null;
         }
+        // 2. 封装成 XNode 对象
         return new XNode(this, node, variables);
     }
 
@@ -230,6 +249,7 @@ public class XPathParser {
     private Document createDocument(InputSource inputSource) {
         // important: this must only be called AFTER common constructor
         try {
+            // 1. 创建 DocumentBuilderFactory 对象
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             factory.setValidating(validation);
@@ -240,9 +260,10 @@ public class XPathParser {
             factory.setCoalescing(false);
             factory.setExpandEntityReferences(true);
 
+            // 2. 创建 DocumentBuilder 对象
             DocumentBuilder builder = factory.newDocumentBuilder();
-            builder.setEntityResolver(entityResolver);
-            builder.setErrorHandler(new ErrorHandler() {
+            builder.setEntityResolver(entityResolver);    // 设置实体解析器
+            builder.setErrorHandler(new ErrorHandler() {   // 设置异常处理，实现都空的
                 @Override
                 public void error(SAXParseException exception) throws SAXException {
                     throw exception;
@@ -258,6 +279,7 @@ public class XPathParser {
                     // NOP
                 }
             });
+            // 3. 解析 XML 文件，将文件加载到Document中
             return builder.parse(inputSource);
         } catch (Exception e) {
             throw new BuilderException("Error creating document instance.  Cause: " + e, e);
