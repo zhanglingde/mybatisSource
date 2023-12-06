@@ -24,7 +24,7 @@ import org.apache.ibatis.binding.MapperProxy.MapperMethodInvoker;
 import org.apache.ibatis.session.SqlSession;
 
 /**
- * 映射器代理工厂
+ * 映射器代理工厂：创建 Mapper 接口的代理对象
  *
  * @author Lasse Voss
  */

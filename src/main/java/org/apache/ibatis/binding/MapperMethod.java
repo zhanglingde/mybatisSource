@@ -48,10 +48,12 @@ public class MapperMethod {
 
     /**
      * 记录了 sql 语句的名称和类型
+     * 该方法对应的 SQL 的唯一编号与类型
      */
     private final SqlCommand command;
     /**
      * mapper 接口中对应方法的相关信息
+     * 该方法的签名，包含入参和出参的相关信息
      */
     private final MethodSignature method;
 
@@ -267,17 +269,22 @@ public class MapperMethod {
      */
     public static class SqlCommand {
 
+        /**
+         * SQL的唯一编号：namespace+id（Mapper接口名称+'.'+方法名称），{# MappedStatement#id}
+         */
         private final String name;
+        /**
+         * SQL 命令类型 {# MappedStatement#sqlCommandType}
+         */
         private final SqlCommandType type;
 
         public SqlCommand(Configuration configuration, Class<?> mapperInterface, Method method) {
             final String methodName = method.getName();
             final Class<?> declaringClass = method.getDeclaringClass();
-            // 解析 sql 语句
-            MappedStatement ms = resolveMappedStatement(mapperInterface, methodName, declaringClass,
-                    configuration);
+            // 获取该方法对应的 MappedStatement（解析 sql 语句）
+            MappedStatement ms = resolveMappedStatement(mapperInterface, methodName, declaringClass, configuration);
             if (ms == null) {
-                // 处理 @Flush 注解
+                // 如果有 @Flush 注解，则标记为 FLUSH 类型
                 if (method.getAnnotation(Flush.class) != null) {
                     name = null;
                     type = SqlCommandType.FLUSH;
@@ -305,15 +312,17 @@ public class MapperMethod {
 
         private MappedStatement resolveMappedStatement(Class<?> mapperInterface, String methodName,
                                                        Class<?> declaringClass, Configuration configuration) {
-            // sql 语句的名称由 Mapper 接口和对应方法名组成
+            // 生成 MappedStatement 唯一编号：Mapper接口名称+'.'+方法名称
             String statementId = mapperInterface.getName() + "." + methodName;
-            // 检测是否有该 sql 语句名称
+            // 在全局对象 Configuration 中获取对应的 MappedStatement（检测是否有该 sql 语句名称）
             if (configuration.hasStatement(statementId)) {
                 // 从configuration.mappedStatements集合中查找对应的MappedStatement对象，MappedStatement对象中封装了SQL语句相关的信息，在mybatis初始化时创建
                 return configuration.getMappedStatement(statementId);
             } else if (mapperInterface.equals(declaringClass)) {
+                // 如果方法就是定义在该接口中，又没找到则直接返回 null
                 return null;
             }
+            // 遍历父接口，获取对应的 MappedStatement
             for (Class<?> superInterface : mapperInterface.getInterfaces()) {
                 if (declaringClass.isAssignableFrom(superInterface)) {
                     MappedStatement ms = resolveMappedStatement(superInterface, methodName,
@@ -332,17 +341,46 @@ public class MapperMethod {
      */
     public static class MethodSignature {
 
+        /**
+         * 返回数据是否包含多个
+         */
         private final boolean returnsMany;
+        /**
+         * 返回类型是否为Map的子类，并且该方法上面使用了 @MapKey 注解
+         */
         private final boolean returnsMap;
+        /**
+         * 返回类型是否为 void
+         */
         private final boolean returnsVoid;
+        /**
+         * 返回类型是否为 Cursor
+         */
         private final boolean returnsCursor;
+        /**
+         * 返回类型是否为 Optional
+         */
         private final boolean returnsOptional;
+        /**
+         * 返回类型
+         */
         private final Class<?> returnType;
-        // 如果返回值类型是map，则该字段记录了作为key的列名
+        /**
+         * 方法上 @MapKey 注解定义的值
+         * 如果返回值类型是map，则该字段记录了作为key的列名
+         */
         private final String mapKey;
-        // 用来标记该方法参数列表中 ResultHandle r类型参数的位置
+        /**
+         * 用来标记该方法参数列表中 ResultHandle r类型参数的位置
+         */
         private final Integer resultHandlerIndex;
+        /**
+         * 用来标记该方法参数列表中 RowBounds 类型参数得位置
+         */
         private final Integer rowBoundsIndex;
+        /**
+         * ParamNameResolver 对象，主要用于解析 @Param 注解定义的参数，参数值与参数得映射等
+         */
         private final ParamNameResolver paramNameResolver;
 
         public MethodSignature(Configuration configuration, Class<?> mapperInterface, Method method) {
@@ -351,25 +389,38 @@ public class MapperMethod {
             if (resolvedReturnType instanceof Class<?>) {
                 this.returnType = (Class<?>) resolvedReturnType;
             } else if (resolvedReturnType instanceof ParameterizedType) {
+                // 获取该参数化类型的实际类型
                 this.returnType = (Class<?>) ((ParameterizedType) resolvedReturnType).getRawType();
             } else {
                 this.returnType = method.getReturnType();
             }
+            // 是否为无返回结果
             this.returnsVoid = void.class.equals(this.returnType);
+            // 返回类型是否为集合或者数组类型
             this.returnsMany = configuration.getObjectFactory().isCollection(this.returnType) || this.returnType.isArray();
+            // 返回类型是否为游标类型
             this.returnsCursor = Cursor.class.equals(this.returnType);
+            // 返回结果是否则 Optional 类型
             this.returnsOptional = Optional.class.equals(this.returnType);
             // 若 MethodSignature 对应方法的返回值是 Map 且制定了 @MapKey 注解，则使用getMapKey方法处理
+            // 解析方法上面的 @MapKey 注解
             this.mapKey = getMapKey(method);
             this.returnsMap = this.mapKey != null;
+            // 方法参数类型为 RowBounds 的位置
             this.rowBoundsIndex = getUniqueParamIndex(method, RowBounds.class);
+            // 方法参数类型为 ResultHandler 的位置
             this.resultHandlerIndex = getUniqueParamIndex(method, ResultHandler.class);
-            // 参数名称解析 @Param 默认 arg0、arg1
+            /*
+             * 参数名称解析 @Param 默认 arg0、arg1
+             * 解析该方法参数名称生成参数位置与参数名称的映射
+             * @Param 注解则取其值作为参数名称，否则取其真实的参数名称，在没有则为参数位置
+             */
             this.paramNameResolver = new ParamNameResolver(configuration, method);
         }
 
         /**
          * 负责将 args 数组转换成 SQL 语句对应的参数列表
+         * 根据入参返回参数名称与入参的映射
          *
          * @param args
          * @return

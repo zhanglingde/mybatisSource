@@ -28,6 +28,7 @@ import org.apache.ibatis.session.SqlSession;
 
 /**
  * 映射注册器
+ * Mapper 接口注册中心，将 Mapper 接口与其 MapperProxyFactory 动态代理对象工厂进行保存
  *
  * @author Clinton Begin
  * @author Eduardo Macarron
@@ -35,9 +36,14 @@ import org.apache.ibatis.session.SqlSession;
  */
 public class MapperRegistry {
 
+    /**
+     * MyBatis Configuration 对象
+     */
     private final Configuration config;
     /**
-     * 记录了 Mapper 接口与对应 MapperProxyFactory 之间的关系
+     * MapperProxyFactory 的映射
+     *
+     * KEY：Mapper 接口
      */
     private final Map<Class<?>, MapperProxyFactory<?>> knownMappers = new HashMap<>();
 
@@ -50,13 +56,13 @@ public class MapperRegistry {
      */
     @SuppressWarnings("unchecked")
     public <T> T getMapper(Class<T> type, SqlSession sqlSession) {
-        // 查找指定 type 对象的 MapperProxyFactory 对象
+        // 1. 获取指定 type 类型的 MapperProxyFactory 对象
         final MapperProxyFactory<T> mapperProxyFactory = (MapperProxyFactory<T>) knownMappers.get(type);
         if (mapperProxyFactory == null) {
             throw new BindingException("Type " + type + " is not known to the MapperRegistry.");
         }
         try {
-            // 创建实现了 type 接口（即持久层 XXXMapper 接口）的代理对象
+            // 2. 创建 Mapper Proxy 对象（即持久层 XXXMapper 接口的代理对象）
             return mapperProxyFactory.newInstance(sqlSession);
         } catch (Exception e) {
             throw new BindingException("Error getting mapper instance. Cause: " + e, e);
@@ -74,24 +80,28 @@ public class MapperRegistry {
      * @param <T>
      */
     public <T> void addMapper(Class<T> type) {
-        // mapper 必须是接口，才会添加
+        // 1. mapper 必须是接口，才会添加
         if (type.isInterface()) {
-            // 是否已经加载过该接口
+            // 2. 已经加载过该接口，则抛出异常
             if (hasMapper(type)) {
                 throw new BindingException("Type " + type + " is already known to the MapperRegistry.");
             }
             boolean loadCompleted = false;
             try {
-                // 将 Mapper 接口对应的 Class 对象和 MapperProxyFactory 对象添加到knownMappers集合
+                // 3. 将 Mapper 接口对应的代理工厂添加到 knownMappers 集合（Key：mapper 接口）
                 knownMappers.put(type, new MapperProxyFactory<>(type));
                 // It's important that the type is added before the parser is run
                 // otherwise the binding may automatically be attempted by the
                 // mapper parser. If the type is already known, it won't try.
+                // 4. 解析 Mapper 的注解配置
                 MapperAnnotationBuilder parser = new MapperAnnotationBuilder(config, type);
+                // 解析 Mapper 接口上面的注解和 Mapper 接口对应的 XML 文件
                 parser.parse();
+                // 5. 标记加载完成
                 loadCompleted = true;
             } finally {
                 // 如果加载过程中出现异常需要再将这个mapper从mybatis中删除,这种方式比较丑陋吧，难道是不得已而为之？
+                // 6. 若加载未完成，从 knownMappers 中移除
                 if (!loadCompleted) {
                     knownMappers.remove(type);
                 }
@@ -110,6 +120,8 @@ public class MapperRegistry {
     }
 
     /**
+     * 用于扫描指定包中的 Mapper 接口，并与 XML 文件进行绑定
+     *
      * Adds the mappers.
      *
      * @param packageName the package name
@@ -117,10 +129,11 @@ public class MapperRegistry {
      * @since 3.2.2
      */
     public void addMappers(String packageName, Class<?> superType) {
-        // 查找包下所有是 superType 的类
+        // 1. 扫描指定包下的指定类（superType 类型）
         ResolverUtil<Class<?>> resolverUtil = new ResolverUtil<>();
         resolverUtil.find(new ResolverUtil.IsA(superType), packageName);
         Set<Class<? extends Class<?>>> mapperSet = resolverUtil.getClasses();
+        // 2. 遍历，添加到 knownMappers 中
         for (Class<?> mapperClass : mapperSet) {
             addMapper(mapperClass);
         }

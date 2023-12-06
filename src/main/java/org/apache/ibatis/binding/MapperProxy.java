@@ -31,6 +31,8 @@ import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.util.MapUtil;
 
 /**
+ * Mapper 接口的动态代理对象，使用JDK动态代理，实现了 InvocationHandler 接口
+ *
  * @author Clinton Begin
  * @author Eduardo Macarron
  */
@@ -41,8 +43,14 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
             | MethodHandles.Lookup.PACKAGE | MethodHandles.Lookup.PUBLIC;
     private static final Constructor<Lookup> lookupConstructor;
     private static final Method privateLookupInMethod;
+
+    /**
+     * SqlSession 对象
+     */
     private final SqlSession sqlSession;
-    // mapper 接口对应的 Class 对象
+    /**
+     * Mapper 接口
+     */
     private final Class<T> mapperInterface;
     // 用于缓存MapperMethod对象，其中key是mapper接口中方法对应的Method对象，value是对应的MapperMethod对象,MapperMethod对象会完成参数转换
     // 以及SQL语句的执行功能，需要注意的是，MapperMethod中并不记录任何状态相关的信息，所以可以在多个代理对象之间共享
@@ -83,7 +91,7 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         try {
-            // 如果是 Object 中通用的方法（toString,hashCode 等），不需要代理，直接调用目标方法
+            // 1. 如果是 Object 中通用的方法（toString,hashCode 等），不需要代理，直接调用目标方法
             if (Object.class.equals(method.getDeclaringClass())) {
                 return method.invoke(this, args);
             } else {
