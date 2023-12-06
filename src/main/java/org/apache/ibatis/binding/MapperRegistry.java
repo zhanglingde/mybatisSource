@@ -74,24 +74,28 @@ public class MapperRegistry {
      * @param <T>
      */
     public <T> void addMapper(Class<T> type) {
-        // mapper 必须是接口，才会添加
+        // 1. mapper 必须是接口，才会添加
         if (type.isInterface()) {
-            // 是否已经加载过该接口
+            // 2. 已经加载过该接口，则抛出异常
             if (hasMapper(type)) {
                 throw new BindingException("Type " + type + " is already known to the MapperRegistry.");
             }
             boolean loadCompleted = false;
             try {
-                // 将 Mapper 接口对应的 Class 对象和 MapperProxyFactory 对象添加到knownMappers集合
+                // 3. 将 Mapper 接口对应的代理工厂 MapperProxyFactory 添加到 knownMappers 中
                 knownMappers.put(type, new MapperProxyFactory<>(type));
                 // It's important that the type is added before the parser is run
                 // otherwise the binding may automatically be attempted by the
                 // mapper parser. If the type is already known, it won't try.
+                // 4. 解析 Mapper 的注解配置
                 MapperAnnotationBuilder parser = new MapperAnnotationBuilder(config, type);
+                // 解析 Mapper 接口上面的注解和 Mapper 接口对应的 XML 文件
                 parser.parse();
+                // 5. 标记加载完成
                 loadCompleted = true;
             } finally {
                 // 如果加载过程中出现异常需要再将这个mapper从mybatis中删除,这种方式比较丑陋吧，难道是不得已而为之？
+                // 6. 若加载未完成，从 knownMappers 中移除
                 if (!loadCompleted) {
                     knownMappers.remove(type);
                 }
@@ -110,6 +114,7 @@ public class MapperRegistry {
     }
 
     /**
+     * 用于扫描指定包中的 Mapper 接口，并与 XML 文件进行绑定
      * Adds the mappers.
      *
      * @param packageName the package name
@@ -117,10 +122,11 @@ public class MapperRegistry {
      * @since 3.2.2
      */
     public void addMappers(String packageName, Class<?> superType) {
-        // 查找包下所有是 superType 的类
+        // 1. 扫描指定包下的指定类
         ResolverUtil<Class<?>> resolverUtil = new ResolverUtil<>();
         resolverUtil.find(new ResolverUtil.IsA(superType), packageName);
         Set<Class<? extends Class<?>>> mapperSet = resolverUtil.getClasses();
+        // 2. 遍历，添加到 knownMappers 中
         for (Class<?> mapperClass : mapperSet) {
             addMapper(mapperClass);
         }

@@ -48,6 +48,8 @@ import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.type.JdbcType;
 
 /**
+ * 根据配置文件进行解析，开始 Mapper 接口与 XML 映射文件的初始化，生成 Configuration 全局配置对象
+ *
  * @author Clinton Begin
  * @author Kazuki Shimizu
  */
@@ -103,11 +105,12 @@ public class XMLConfigBuilder extends BaseBuilder {
      * @param props
      */
     private XMLConfigBuilder(XPathParser parser, String environment, Properties props) {
-        // 调用父类初始化 Configuration
+        // 1. 创建 Configuration 对象
         super(new Configuration());
+        // 创建一个当前线程的上下文，记录错误信息
         // 上下文设置成 SQL Mapper Configuration(xml 文件配置)
         ErrorContext.instance().resource("SQL Mapper Configuration");
-        // 属性添加到 configuration 对象
+        // 2. 设置 Configuration 的 variables 属性
         this.configuration.setVariables(props);
         this.parsed = false;
         this.environment = environment;
@@ -119,11 +122,13 @@ public class XMLConfigBuilder extends BaseBuilder {
      * @return
      */
     public Configuration parse() {
+        // 1. 若已解析，抛出 BuilderException 异常
         if (parsed) {
             throw new BuilderException("Each XMLConfigBuilder can only be used once.");
         }
+        // 标记已解析
         parsed = true;
-        // 解析 <configuration> 根节点
+        // 2. 解析 XML <configuration> 根节点
         parseConfiguration(parser.evalNode("/configuration"));
         return configuration;
     }
@@ -136,31 +141,34 @@ public class XMLConfigBuilder extends BaseBuilder {
         try {
             // 分步骤解析
             // issue #117 read properties first
-            // 1. properties
+            // 1. 解析 <properties /> 标签
             propertiesElement(root.evalNode("properties"));
+            // 2. 解析 <settings /> 标签，解析配置生成 Properties 对象
             Properties settings = settingsAsProperties(root.evalNode("settings"));
+            // 根据配置加载自定义 VFS 实现类
             loadCustomVfs(settings);
+            // 根据配置加载自定义的 Log 实现类
             loadCustomLogImpl(settings);
-            // 2. 解析类型别名
+            // 3. 解析 <typeAliases /> 标签，生成别名与类的映射关系
             typeAliasesElement(root.evalNode("typeAliases"));
-            // 3. 插件
+            // 4. 解析 <plugins /> 标签，添加自定义拦截器插件
             pluginElement(root.evalNode("plugins"));
-            // 4. 对象工厂
+            // 5. 解析 <objectFactory /> 标签，自定义实例工厂
             objectFactoryElement(root.evalNode("objectFactory"));
-            // 5. 对象包装工厂
+            // 6. 解析 <objectWrapperFactory /> 标签，自定义 ObjectWrapperFactory 工厂，无默认实现
             objectWrapperFactoryElement(root.evalNode("objectWrapperFactory"));
-            // 6. 反射工厂
+            // 7. 解析 <reflectorFactory /> 标签，自定义 Reflector 工厂
             reflectorFactoryElement(root.evalNode("reflectorFactory"));
-            // 7. 设置
+            // 将 <settings /> 配置信息添加到 Configuration 属性
             settingsElement(settings);
             // read it after objectFactory and objectWrapperFactory issue #631
-            // 8. 环境
+            // 8. 解析 <environments /> 标签，自定义当前环境信息
             environmentsElement(root.evalNode("environments"));
-            // 9. databaseIdProvider
+            // 9. 解析 <databaseIdProvider /> 标签，数据库标识符
             databaseIdProviderElement(root.evalNode("databaseIdProvider"));
-            // 10. 解析类型处理器
+            // 10. 解析 <typeHandlers /> 标签，自定义类型处理器
             typeHandlerElement(root.evalNode("typeHandlers"));
-            // 11. 映射器（重要）
+            // 11. 解析 <mappers /> 标签，扫描Mapper接口并进行解析（重要）
             mapperElement(root.evalNode("mappers"));
         } catch (Exception e) {
             throw new BuilderException("Error parsing SQL Mapper Configuration. Cause: " + e, e);
@@ -617,38 +625,42 @@ public class XMLConfigBuilder extends BaseBuilder {
      */
     private void mapperElement(XNode parent) throws Exception {
         if (parent != null) {
-            // 处理 mapper 子节点
+            // 0. 处理 mapper 子节点
             for (XNode child : parent.getChildren()) {
+                // 1. 如果是 package 标签，则扫描该包
                 if ("package".equals(child.getName())) {
-                    // 4. 扫描包下所有映射器
+                    // 获得包名，添加到 configuration 中
                     String mapperPackage = child.getStringAttribute("name");
                     // 扫描指定的包，并向 mapperRegistry 注册 mapper 接口
                     configuration.addMappers(mapperPackage);
-                } else {
+                } else {    // 如果是 mapper 标签
                     // 获取 mapper 节点的 resource、url、class 属性，三个属性互斥
                     String resource = child.getStringAttribute("resource");
                     String url = child.getStringAttribute("url");
                     String mapperClass = child.getStringAttribute("class");
+                    // 2. 使用相对于类路径的资源引用
                     // 如果 mapper 节点指定了 resource 或 url 属性，则创建 XmlMapperBuilder 对象，并通过该对象解析resource或者url属性指定的mapper配置文件
                     if (resource != null && url == null && mapperClass == null) {
-                        // 1. 使用类路径
+                        // 2.1. 使用类路径
                         ErrorContext.instance().resource(resource);
+                        // 获得 resource 的 InputStream 对象
                         try(InputStream inputStream = Resources.getResourceAsStream(resource)) {
-                            // 创建 XMLMapperBuilder 对象，解析映射配置文件
+                            // 创建 XMLMapperBuilder 对象，并执行解析
                             XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, resource, configuration.getSqlFragments());
                             mapperParser.parse();
                         }
+                    // 3. 使用完全限定资源定位符（URL）
                     } else if (resource == null && url != null && mapperClass == null) {
-                        // 2. 使用绝对 url 路径
+                        // 3.1. 获得 url 的 InputStream 对象（使用绝对 url 路径）
                         ErrorContext.instance().resource(url);
                         try(InputStream inputStream = Resources.getUrlAsStream(url)){
-                            // 创建 XMLMapperBuilder 对象，解析映射配置文件
+                            // 创建 XMLMapperBuilder 对象，并执行解析
                             XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, url, configuration.getSqlFragments());
                             mapperParser.parse();
                         }
+                    // 4. 使用映射器接口实现类的完全限定类名（使用 java 类名）
                     } else if (resource == null && url == null && mapperClass != null) {
-                        // 3. 使用 java 类名
-                        // 如果 mapper 节点指定了 class 属性，则向 MapperRegistry 注册该 mapper 接口
+                        // 获得 Mapper 接口 （如果 mapper 节点指定了 class 属性，则向 MapperRegistry 注册该 mapper 接口）
                         Class<?> mapperInterface = Resources.classForName(mapperClass);
                         // 将映射加入配置文件
                         configuration.addMapper(mapperInterface);

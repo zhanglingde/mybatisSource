@@ -41,7 +41,13 @@ import org.apache.ibatis.session.Configuration;
 public class XMLStatementBuilder extends BaseBuilder {
 
     private final MapperBuilderAssistant builderAssistant;
+    /**
+     * 当前 XML 节点，例如：<select />、<insert />、<update />、<delete /> 标签
+     */
     private final XNode context;
+    /**
+     * 要求的 databaseId
+     */
     private final String requiredDatabaseId;
 
     public XMLStatementBuilder(Configuration configuration, MapperBuilderAssistant builderAssistant, XNode context) {
@@ -74,20 +80,24 @@ public class XMLStatementBuilder extends BaseBuilder {
      * </select>
      */
     public void parseStatementNode() {
+        // 获得 id 属性，编号
         String id = context.getStringAttribute("id");
+        // 获得 databaseId，判断 databaseId 是否匹配
         String databaseId = context.getStringAttribute("databaseId");
 
-        // 如果databaseId不匹配，退出
+        // 如果 databaseId 不匹配，退出
         if (!databaseIdMatchesCurrent(id, databaseId, this.requiredDatabaseId)) {
             return;
         }
 
-        // 根据 sql 节点的名称决定其 SqlCommandType
+        // 1. 根据 sql 节点的名称决定其 SqlCommandType
         String nodeName = context.getNode().getNodeName();
         SqlCommandType sqlCommandType = SqlCommandType.valueOf(nodeName.toUpperCase(Locale.ENGLISH));
+        // 是否为 Select 语句
         boolean isSelect = sqlCommandType == SqlCommandType.SELECT;
+        // 2. 否清空缓存
         boolean flushCache = context.getBooleanAttribute("flushCache", !isSelect);
-        // 是否要缓存 select 结果
+        // 3. 是否要缓存 select 结果
         boolean useCache = context.getBooleanAttribute("useCache", isSelect);
         // 仅针对嵌套结果 select 语句适用：如果为 true，就是假设包含了嵌套结果集或是分组了，这样的话当返回一个主结果行的时候，就不会发生有对前面结果集的引用的情况。
         // 这就使得在获取嵌套的结果集的时候不至于导致内存不够用。默认值：false。
@@ -96,16 +106,20 @@ public class XMLStatementBuilder extends BaseBuilder {
         // Include Fragments before parsing
         // 解析之前先解析 <include> SQL 片段
         XMLIncludeTransformer includeParser = new XMLIncludeTransformer(configuration, builderAssistant);
+        // 4. 将该节点的子节点<include />转换成<sql />节点
         includeParser.applyIncludes(context.getNode());
 
+        // 获取参数类型名称
         String parameterType = context.getStringAttribute("parameterType");
+        // 5. 数类型名称转换成 Java Type
         Class<?> parameterTypeClass = resolveClass(parameterType);
 
+        // 6. 获得 lang 对应的 LanguageDriver 对象
         String lang = context.getStringAttribute("lang");
         LanguageDriver langDriver = getLanguageDriver(lang);
 
         // Parse selectKey after includes and remove them.
-        // 解析之前先解析<selectKey>
+        // 7. 将该节点的子节点<selectKey />解析成 SelectKeyGenerator 生成器（解析之前先解析<selectKey>）
         processSelectKeyNodes(id, parameterTypeClass, langDriver);
 
         // Parse the SQL (pre: <selectKey> and <include> were parsed and removed)
@@ -113,6 +127,11 @@ public class XMLStatementBuilder extends BaseBuilder {
         String keyStatementId = id + SelectKeyGenerator.SELECT_KEY_SUFFIX;
         keyStatementId = builderAssistant.applyCurrentNamespace(keyStatementId, true);
         // SQL 节点下存在的 SelectKey 节点
+        /*
+         * <8>
+         * 1. 如果上面存在 <selectKey /> 子节点，则获取上面对其解析后生成的 SelectKeyGenerator
+         * 2. 否则判断该节点是否配置了 useGeneratedKeys 属性为 true 并且是 插入语句，则使用 Jdbc3KeyGenerator
+         */
         if (configuration.hasKeyGenerator(keyStatementId)) {
             keyGenerator = configuration.getKeyGenerator(keyStatementId);
         } else {
@@ -122,16 +141,20 @@ public class XMLStatementBuilder extends BaseBuilder {
         }
 
         // 解析成SqlSource，一般是DynamicSqlSource
+        // <9> 创建对应的 SqlSource 对象，保存了该节点下 SQL 相关信息
         SqlSource sqlSource = langDriver.createSqlSource(configuration, context, parameterTypeClass);
-        // 语句类型：STATEMENT, PREPARED, CALLABLE
+        // 10. 获得 Statement 类型，默认 PREPARED；语句类型：STATEMENT, PREPARED, CALLABLE
         StatementType statementType = StatementType.valueOf(context.getStringAttribute("statementType", StatementType.PREPARED.toString()));
         // 获取每次批量返回的结果行数
         Integer fetchSize = context.getIntAttribute("fetchSize");
         Integer timeout = context.getIntAttribute("timeout");
         // 引用外部 parameterMap,已废弃
         String parameterMap = context.getStringAttribute("parameterMap");
+        // 11. 获得返回结果类型名称
         String resultType = context.getStringAttribute("resultType");
+        // 获取返回结果的 Java Type
         Class<?> resultTypeClass = resolveClass(resultType);
+        // 获取 resultMap
         String resultMap = context.getStringAttribute("resultMap");
         String resultSetType = context.getStringAttribute("resultSetType");
         ResultSetType resultSetTypeEnum = resolveResultSetType(resultSetType);
@@ -139,8 +162,10 @@ public class XMLStatementBuilder extends BaseBuilder {
             resultSetTypeEnum = configuration.getDefaultResultSetType();
         }
         // (仅对 insert 有用) 标记一个属性, MyBatis 会通过 getGeneratedKeys 或者通过 insert 语句的 selectKey 子元素设置它的值
+        // 对应的 java 属性，结合 useGeneratedKeys 使用
         String keyProperty = context.getStringAttribute("keyProperty");
         // (仅对 insert 有用) 标记一个属性, MyBatis 会通过 getGeneratedKeys 或者通过 insert 语句的 selectKey 子元素设置它的值
+        // 对应的 column 列名，结合 useGeneratedKeys 使用
         String keyColumn = context.getStringAttribute("keyColumn");
         String resultSets = context.getStringAttribute("resultSets");
 
