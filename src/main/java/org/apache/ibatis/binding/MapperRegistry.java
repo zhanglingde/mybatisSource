@@ -28,6 +28,7 @@ import org.apache.ibatis.session.SqlSession;
 
 /**
  * 映射注册器
+ * Mapper 接口注册中心，将 Mapper 接口与其 MapperProxyFactory 动态代理对象工厂进行保存
  *
  * @author Clinton Begin
  * @author Eduardo Macarron
@@ -35,9 +36,14 @@ import org.apache.ibatis.session.SqlSession;
  */
 public class MapperRegistry {
 
+    /**
+     * MyBatis Configuration 对象
+     */
     private final Configuration config;
     /**
-     * 记录了 Mapper 接口与对应 MapperProxyFactory 之间的关系
+     * MapperProxyFactory 的映射
+     *
+     * KEY：Mapper 接口
      */
     private final Map<Class<?>, MapperProxyFactory<?>> knownMappers = new HashMap<>();
 
@@ -50,13 +56,13 @@ public class MapperRegistry {
      */
     @SuppressWarnings("unchecked")
     public <T> T getMapper(Class<T> type, SqlSession sqlSession) {
-        // 查找指定 type 对象的 MapperProxyFactory 对象
+        // 1. 获取指定 type 类型的 MapperProxyFactory 对象
         final MapperProxyFactory<T> mapperProxyFactory = (MapperProxyFactory<T>) knownMappers.get(type);
         if (mapperProxyFactory == null) {
             throw new BindingException("Type " + type + " is not known to the MapperRegistry.");
         }
         try {
-            // 创建实现了 type 接口（即持久层 XXXMapper 接口）的代理对象
+            // 2. 创建 Mapper Proxy 对象（即持久层 XXXMapper 接口的代理对象）
             return mapperProxyFactory.newInstance(sqlSession);
         } catch (Exception e) {
             throw new BindingException("Error getting mapper instance. Cause: " + e, e);
@@ -115,6 +121,7 @@ public class MapperRegistry {
 
     /**
      * 用于扫描指定包中的 Mapper 接口，并与 XML 文件进行绑定
+     *
      * Adds the mappers.
      *
      * @param packageName the package name
@@ -122,7 +129,7 @@ public class MapperRegistry {
      * @since 3.2.2
      */
     public void addMappers(String packageName, Class<?> superType) {
-        // 1. 扫描指定包下的指定类
+        // 1. 扫描指定包下的指定类（superType 类型）
         ResolverUtil<Class<?>> resolverUtil = new ResolverUtil<>();
         resolverUtil.find(new ResolverUtil.IsA(superType), packageName);
         Set<Class<? extends Class<?>>> mapperSet = resolverUtil.getClasses();
