@@ -87,6 +87,7 @@ public class XMLMapperBuilder extends BaseBuilder {
 
     @Deprecated
     public XMLMapperBuilder(Reader reader, Configuration configuration, String resource, Map<String, XNode> sqlFragments) {
+        // 1. XPathParser 构造方法会将 XML 映射文件解析成 org.w3c.dom.Document 对象，传入 XMLMapperEntityResolver 解析实例对象，使用到本地的 DTD 文件
         this(new XPathParser(reader, true, configuration.getVariables(), new XMLMapperEntityResolver()),
                 configuration, resource, sqlFragments);
     }
@@ -103,6 +104,7 @@ public class XMLMapperBuilder extends BaseBuilder {
 
     private XMLMapperBuilder(XPathParser parser, Configuration configuration, String resource, Map<String, XNode> sqlFragments) {
         super(configuration);
+        // 2. 创建 MapperBuilderAssistant 对象
         this.builderAssistant = new MapperBuilderAssistant(configuration, resource);
         this.parser = parser;
         this.sqlFragments = sqlFragments;
@@ -123,11 +125,11 @@ public class XMLMapperBuilder extends BaseBuilder {
             bindMapperForNamespace();
         }
 
-        // 5. 处理 ConfigurationElement 方法中解析失败的 resultMap 节点
+        // 5. 处理 ConfigurationElement 方法中解析失败的 <resultMap /> 节点
         parsePendingResultMaps();
         // 6. 解析待定的 <cache-ref/> 节点
         parsePendingCacheRefs();
-        // 7. 解析待定的 sql 语句节点
+        // 7. 解析待定的 sql 语句节点，Statement 对象
         parsePendingStatements();
     }
 
@@ -146,7 +148,7 @@ public class XMLMapperBuilder extends BaseBuilder {
      */
     private void configurationElement(XNode context) {
         try {
-            // 1. 配置 namespace
+            // 1. 配置 namespace( xml 映射文件中定义的 namespace 和接口名称不相等会抛出异常)
             String namespace = context.getStringAttribute("namespace");
             if (namespace == null || namespace.isEmpty()) {
                 throw new BuilderException("Mapper's namespace cannot be empty");
@@ -241,6 +243,11 @@ public class XMLMapperBuilder extends BaseBuilder {
         }
     }
 
+    /**
+     * 解析当前 xml 映射文件的缓存配置，将当前 namespace 缓存引用其他的 namespace 的缓存形成映射关系保存在 Configuration 全局配置对象中
+     *
+     * @param context
+     */
     private void cacheRefElement(XNode context) {
         if (context != null) {
             // 1. 获得指向的 namespace 名字，并添加到 configuration 的 cacheRefMap 中
@@ -258,6 +265,9 @@ public class XMLMapperBuilder extends BaseBuilder {
 
     /**
      * 3. 解析 cache 标签
+     *
+     * 解析该节点的相关配置，然后通过 MapperBuilderAssistant 构造器小助手创建一个 Cache 缓存实例，
+     * 添加到 Configuration 全局配置对象中，并设置到构造器助手中，在后续构建相关对象时使用
      *
      *   <cache eviction="FIFO" flushInterval="60000" size="512" readOnly="true"/>
      *
@@ -335,9 +345,9 @@ public class XMLMapperBuilder extends BaseBuilder {
      *       <result property="username" column="username"/>
      *       <result property="password" column="password"/>
      *     </resultMap>
-     * @param resultMapNode
-     * @param additionalResultMappings
-     * @param enclosingType
+     * @param resultMapNode 当前节点 Node 的封装，封装成 XNode 便于操作
+     * @param additionalResultMappings 继承的 ResultMap 所对应的 ResultMapping 的集合，可以通过 extend 属性配置继承哪个 ResultMap，没有继承就是空集合
+     * @param enclosingType resultMap 的类型， <association/> 也会被解析成 ResultMap,那么它的 enclosingType 就是所属 ResultMap 的 Class 对象
      * @return
      */
     private ResultMap resultMapElement(XNode resultMapNode, List<ResultMapping> additionalResultMappings, Class<?> enclosingType) {
@@ -381,7 +391,8 @@ public class XMLMapperBuilder extends BaseBuilder {
         // 3. 创建 ResultMapResolver 对象，执行解析；解析后得到 resultMap
         ResultMapResolver resultMapResolver = new ResultMapResolver(builderAssistant, id, typeClass, extend, discriminator, resultMappings, autoMapping);
         try {
-            // 处理 ResultMap 并添加到 Configuration 全局配置中
+            // 处理 ResultMap 并添加到 Configuration 全局配置中，
+            // 内部调用 MapperBuilderAssistant 构造器小助手的addResultMap 来生成ResultMap对象的
             return resultMapResolver.resolve();
         } catch (IncompleteElementException e) {
             configuration.addIncompleteResultMap(resultMapResolver);

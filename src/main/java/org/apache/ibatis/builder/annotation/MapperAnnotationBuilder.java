@@ -103,6 +103,9 @@ public class MapperAnnotationBuilder {
             InsertProvider.class, DeleteProvider.class)
         .collect(Collectors.toSet());
 
+    /**
+     * 全局配置文件
+     */
     private final Configuration configuration;
     /**
      * Mapper 构造器小助手
@@ -120,17 +123,20 @@ public class MapperAnnotationBuilder {
         this.type = type;
     }
 
+    // 解析 Mapper 接口
     public void parse() {
+        // 1. 获取 Mapper 接口的名称，根据全局配置对象判断是否被解析过
         String resource = type.toString();
         if (!configuration.isResourceLoaded(resource)) {
-            // 加载该接口对应的 XML 文件
+            // 2. 未被解析过，加载该接口对应的 XML 文件
             loadXmlResource();
             configuration.addLoadedResource(resource);
             assistant.setCurrentNamespace(type.getName());
-            // 解析 Mapper 接口的 @CacheNamespace 注解，创建缓存
+            // 3. 解析 Mapper 接口的 @CacheNamespace 注解，创建缓存
             parseCache();
             // 解析 Mapper 接口的 @CacheNamespaceRef 注解，引用其他命名空间
             parseCacheRef();
+            // 4. 循环解析方法上面的 Mybatis 注解
             for (Method method : type.getMethods()) {
                 if (!canHaveStatement(method)) {
                     continue;
@@ -170,11 +176,14 @@ public class MapperAnnotationBuilder {
         }
     }
 
+    // 加载解析 XML 配置文件
     private void loadXmlResource() {
         // Spring may not know the real resource name so we check a flag
         // to prevent loading again a resource twice
         // this flag is set at XMLMapperBuilder#bindMapperForNamespace
+        // 1. 根据全局配置对象判断命名空间是否解析过 namespace:xxx.xxx.xxx
         if (!configuration.isResourceLoaded("namespace:" + type.getName())) {
+            // 2. 创建 XML 映射文件资源，获取 xxx/xxx/xxx.xml 文件流
             String xmlResource = type.getName().replace('.', '/') + ".xml";
             // #1347
             InputStream inputStream = type.getResourceAsStream("/" + xmlResource);
@@ -187,9 +196,8 @@ public class MapperAnnotationBuilder {
                 }
             }
             if (inputStream != null) {
-                // 创建 XMLMapperBuilder 对象
+                // 3. 创建 XMLMapperBuilder 对象，并调用 parse() 方法解析该 xml 映射文件
                 XMLMapperBuilder xmlParser = new XMLMapperBuilder(inputStream, assistant.getConfiguration(), xmlResource, configuration.getSqlFragments(), type.getName());
-                // 解析该 XML 文件
                 xmlParser.parse();
             }
         }

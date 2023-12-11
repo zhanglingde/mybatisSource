@@ -119,6 +119,11 @@ public class MapperBuilderAssistant extends BaseBuilder {
         return currentNamespace + "." + base;
     }
 
+    /**
+     *
+     * @param namespace 所引用的缓存所在的 namespace
+     * @return
+     */
     public Cache useCacheRef(String namespace) {
         if (namespace == null) {
             throw new BuilderException("cache-ref element requires a namespace attribute.");
@@ -196,21 +201,20 @@ public class MapperBuilderAssistant extends BaseBuilder {
     }
 
     // 前面在XMLMapperBuilder的resultMapElement方法使用ResultMapResolver生成ResultMap对象时会调用这个方法，用来解析生成ResultMap对象
-    public ResultMap addResultMap(
-            String id,
-            Class<?> type,
-            String extend,
-            Discriminator discriminator,
-            List<ResultMapping> resultMappings,
-            Boolean autoMapping) {
+    public ResultMap addResultMap(String id,
+                                  Class<?> type,
+                                  String extend,
+                                  Discriminator discriminator,
+                                  List<ResultMapping> resultMappings,
+                                  Boolean autoMapping) {
         // 1. 获得 ResultMap 编号，即格式为 `${namespace}.${id}`
         id = applyCurrentNamespace(id, false);
-        // 2.1 <2.1> 获取完整的父 ResultMap 属性，即格式为 `${namespace}.${extend}`。从这里的逻辑来看，貌似只能获取自己 namespace 下的 ResultMap 。
+        // 2.1 获取完整的父 ResultMap 属性，即格式为 `${namespace}.${extend}`。从这里的逻辑来看，貌似只能获取自己 namespace 下的 ResultMap 。
         extend = applyCurrentNamespace(extend, true);
 
         // 2.2 如果有父类，则将父类的 ResultMap 集合，添加到 resultMappings 中。
         if (extend != null) {
-            // <2.2.1> 获得 extend 对应的 ResultMap 对象。如果不存在，则抛出 IncompleteElementException 异常
+            // 2.2.1 获得 extend 对应的 ResultMap 对象。如果不存在，则抛出 IncompleteElementException 异常
             // 所以说 <resultMap /> 标签如果有继承关系就必须有先后顺序？
             if (!configuration.hasResultMap(extend)) {
                 throw new IncompleteElementException("Could not find a parent resultmap with id '" + extend + "'");
@@ -275,27 +279,26 @@ public class MapperBuilderAssistant extends BaseBuilder {
     }
 
     // 在XMLStatementBuilder的parseStatementNode方法中会调用该方法，用来构建一个MappedStatement对象
-    public MappedStatement addMappedStatement(
-            String id,
-            SqlSource sqlSource,
-            StatementType statementType,
-            SqlCommandType sqlCommandType,
-            Integer fetchSize,
-            Integer timeout,
-            String parameterMap,
-            Class<?> parameterType,
-            String resultMap,
-            Class<?> resultType,
-            ResultSetType resultSetType,
-            boolean flushCache,
-            boolean useCache,
-            boolean resultOrdered,
-            KeyGenerator keyGenerator,
-            String keyProperty,
-            String keyColumn,
-            String databaseId,
-            LanguageDriver lang,
-            String resultSets) {
+    public MappedStatement addMappedStatement(String id,
+                                              SqlSource sqlSource,
+                                              StatementType statementType,
+                                              SqlCommandType sqlCommandType,
+                                              Integer fetchSize,
+                                              Integer timeout,
+                                              String parameterMap,
+                                              Class<?> parameterType,
+                                              String resultMap,
+                                              Class<?> resultType,
+                                              ResultSetType resultSetType,
+                                              boolean flushCache,
+                                              boolean useCache,
+                                              boolean resultOrdered,
+                                              KeyGenerator keyGenerator,
+                                              String keyProperty,
+                                              String keyColumn,
+                                              String databaseId,
+                                              LanguageDriver lang,
+                                              String resultSets) {
 
         // 1. 如果的指向的 Cache 未解析，抛出异常
         if (unresolvedCacheRef) {
@@ -431,21 +434,20 @@ public class MapperBuilderAssistant extends BaseBuilder {
     }
 
     // 创建一个 RequestMapping 对象
-    public ResultMapping buildResultMapping(
-            Class<?> resultType,
-            String property,
-            String column,
-            Class<?> javaType,
-            JdbcType jdbcType,
-            String nestedSelect,
-            String nestedResultMap,
-            String notNullColumn,
-            String columnPrefix,
-            Class<? extends TypeHandler<?>> typeHandler,
-            List<ResultFlag> flags,
-            String resultSet,
-            String foreignColumn,
-            boolean lazy) {
+    public ResultMapping buildResultMapping(Class<?> resultType,
+                                            String property,
+                                            String column,
+                                            Class<?> javaType,
+                                            JdbcType jdbcType,
+                                            String nestedSelect,
+                                            String nestedResultMap,
+                                            String notNullColumn,
+                                            String columnPrefix,
+                                            Class<? extends TypeHandler<?>> typeHandler,
+                                            List<ResultFlag> flags,
+                                            String resultSet,
+                                            String foreignColumn,
+                                            boolean lazy) {
         // 1. 解析对应的 Java Type
         Class<?> javaTypeClass = resolveResultJavaType(resultType, property, javaType);
         // 解析对应的 TypeHandler ，一般不会设置

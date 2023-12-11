@@ -129,8 +129,8 @@ public class MapperRegistry {
      * @since 3.2.2
      */
     public void addMappers(String packageName, Class<?> superType) {
-        // 1. 扫描指定包下的指定类（superType 类型）
         ResolverUtil<Class<?>> resolverUtil = new ResolverUtil<>();
+        // 1. 扫描指定包下的指定类（superType 类型），添加到 matches 集合
         resolverUtil.find(new ResolverUtil.IsA(superType), packageName);
         Set<Class<? extends Class<?>>> mapperSet = resolverUtil.getClasses();
         // 2. 遍历，添加到 knownMappers 中

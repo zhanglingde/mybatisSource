@@ -95,9 +95,9 @@ public class XMLStatementBuilder extends BaseBuilder {
         SqlCommandType sqlCommandType = SqlCommandType.valueOf(nodeName.toUpperCase(Locale.ENGLISH));
         // 是否为 Select 语句
         boolean isSelect = sqlCommandType == SqlCommandType.SELECT;
-        // 2. 否清空缓存
+        // 2. 是否清空缓存，非查询语句默认都是 true
         boolean flushCache = context.getBooleanAttribute("flushCache", !isSelect);
-        // 3. 是否要缓存 select 结果
+        // 3. 是否要缓存 select 结果，查询语句默认为 true
         boolean useCache = context.getBooleanAttribute("useCache", isSelect);
         // 仅针对嵌套结果 select 语句适用：如果为 true，就是假设包含了嵌套结果集或是分组了，这样的话当返回一个主结果行的时候，就不会发生有对前面结果集的引用的情况。
         // 这就使得在获取嵌套的结果集的时候不至于导致内存不够用。默认值：false。
@@ -106,20 +106,21 @@ public class XMLStatementBuilder extends BaseBuilder {
         // Include Fragments before parsing
         // 解析之前先解析 <include> SQL 片段
         XMLIncludeTransformer includeParser = new XMLIncludeTransformer(configuration, builderAssistant);
-        // 4. 将该节点的子节点<include />转换成<sql />节点
+        // 4. 将该节点的子节点 <include /> 转换成 <sql />节点，
+        // 大致逻辑就是从sqlFragments（前面已经将所有的<sql />节点进行解析存放在其中了）获取对应的<sql />节点，然后替换<include />节点
         includeParser.applyIncludes(context.getNode());
 
-        // 获取参数类型名称
+        // 5. 获取参数类型名称，转换成 Class 对象
         String parameterType = context.getStringAttribute("parameterType");
-        // 5. 数类型名称转换成 Java Type
         Class<?> parameterTypeClass = resolveClass(parameterType);
 
-        // 6. 获得 lang 对应的 LanguageDriver 对象
+        // 6. 获得 lang 对应的 LanguageDriver 对象，默认为 XMLLanguageDriver
         String lang = context.getStringAttribute("lang");
         LanguageDriver langDriver = getLanguageDriver(lang);
 
         // Parse selectKey after includes and remove them.
         // 7. 将该节点的子节点<selectKey />解析成 SelectKeyGenerator 生成器（解析之前先解析<selectKey>）
+        // 用于生成一个key设置到返回对象中，在processSelectKeyNodes 方法中可以看到，该过程也会生成一个 MappedStatement 对象，生成的对象的id 为statementId+'!selectKey
         processSelectKeyNodes(id, parameterTypeClass, langDriver);
 
         // Parse the SQL (pre: <selectKey> and <include> were parsed and removed)
@@ -140,8 +141,9 @@ public class XMLStatementBuilder extends BaseBuilder {
                     ? Jdbc3KeyGenerator.INSTANCE : NoKeyGenerator.INSTANCE;
         }
 
-        // 解析成SqlSource，一般是DynamicSqlSource
+        // 解析成 SqlSource，一般是 DynamicSqlSource
         // <9> 创建对应的 SqlSource 对象，保存了该节点下 SQL 相关信息
+        // 据XMLLanguageDriver语言驱动创建 Sqlsource 对象，通过这个对象可以获取到对应的SQL语
         SqlSource sqlSource = langDriver.createSqlSource(configuration, context, parameterTypeClass);
         // 10. 获得 Statement 类型，默认 PREPARED；语句类型：STATEMENT, PREPARED, CALLABLE
         StatementType statementType = StatementType.valueOf(context.getStringAttribute("statementType", StatementType.PREPARED.toString()));
@@ -169,7 +171,7 @@ public class XMLStatementBuilder extends BaseBuilder {
         String keyColumn = context.getStringAttribute("keyColumn");
         String resultSets = context.getStringAttribute("resultSets");
 
-        // 通过 MapperBuilderAssistant 创建 MappedStatement 对象，并添加到 mappedStatements 集合中保存
+        // 12. 通过 MapperBuilderAssistant 构造器小助手根据这些属性构建 MappedStatement 对象，并添加到 mappedStatements 集合中保存
         builderAssistant.addMappedStatement(id, sqlSource, statementType, sqlCommandType,
                 fetchSize, timeout, parameterMap, parameterTypeClass, resultMap, resultTypeClass,
                 resultSetTypeEnum, flushCache, useCache, resultOrdered,

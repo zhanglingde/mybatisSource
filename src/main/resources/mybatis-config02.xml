@@ -27,7 +27,13 @@
 
 	<!-- 加载mapper.xml -->
 	<mappers>
-		<mapper resource="com/ling/test02/mapper/UserMapper.xml"/>
+		<!-- 方式一：扫描包名（包括了下面三种配置方式）		-->
+
+		<!-- 方式二：三种配置方式		-->
+		<package name="com.ling"/>
+<!--		<mapper resource="com/ling/test02/mapper/UserMapper.xml"/>-->
+<!--		<mapper class="com.ling.test02.mapper.UserMapper"/>-->
+<!--		<mapper url="file:///D:\codes\source\mybatisSource\src\main\java\com\ling\test02\mapper\UserMapper.xml"/>-->
 	</mappers>
 
 </configuration>
