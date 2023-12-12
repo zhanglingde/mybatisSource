@@ -18,18 +18,23 @@ package org.apache.ibatis.scripting.xmltags;
 import java.util.List;
 
 /**
+ * 用于保存多个SqlNode对象
  * @author Clinton Begin
  */
 public class MixedSqlNode implements SqlNode {
-  private final List<SqlNode> contents;
+    /**
+     * 动态节点集合
+     */
+    private final List<SqlNode> contents;
 
-  public MixedSqlNode(List<SqlNode> contents) {
-    this.contents = contents;
-  }
+    public MixedSqlNode(List<SqlNode> contents) {
+        this.contents = contents;
+    }
 
-  @Override
-  public boolean apply(DynamicContext context) {
-    contents.forEach(node -> node.apply(context));
-    return true;
-  }
+    @Override
+    public boolean apply(DynamicContext context) {
+        // 逐个应用
+        contents.forEach(node -> node.apply(context));
+        return true;
+    }
 }

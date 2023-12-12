@@ -16,8 +16,15 @@
 package org.apache.ibatis.scripting.xmltags;
 
 /**
+ * SQL Node接口，每个 XML Node会解析成对应的SQL Node对象，通过上下文可以对动态SQL进行逻辑处理，生成需要的结果
  * @author Clinton Begin
  */
 public interface SqlNode {
-  boolean apply(DynamicContext context);
+    /**
+     * 应用当前 SQLNode 节点
+     *
+     * @param context 正在解析 SQL 语句的上下文
+     * @return 是否应用成功
+     */
+    boolean apply(DynamicContext context);
 }

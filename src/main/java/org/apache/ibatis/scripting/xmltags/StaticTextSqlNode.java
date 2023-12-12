@@ -16,19 +16,25 @@
 package org.apache.ibatis.scripting.xmltags;
 
 /**
+ * 用于保存静态文本，逻辑比较简单，直接拼接文本
+ *
  * @author Clinton Begin
  */
 public class StaticTextSqlNode implements SqlNode {
-  private final String text;
+    /**
+     * 静态内容
+     */
+    private final String text;
 
-  public StaticTextSqlNode(String text) {
-    this.text = text;
-  }
+    public StaticTextSqlNode(String text) {
+        this.text = text;
+    }
 
-  @Override
-  public boolean apply(DynamicContext context) {
-    context.appendSql(text);
-    return true;
-  }
+    @Override
+    public boolean apply(DynamicContext context) {
+        // 直接往正在解析 SQL 语句的上下文的 SQL 中添加该内容
+        context.appendSql(text);
+        return true;
+    }
 
 }

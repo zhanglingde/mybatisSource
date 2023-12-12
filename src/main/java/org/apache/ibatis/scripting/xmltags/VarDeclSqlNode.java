@@ -16,23 +16,32 @@
 package org.apache.ibatis.scripting.xmltags;
 
 /**
+ * <bind /> 标签对应的 SqlNode 实现类
  * @author Frank D. Martinez [mnesarco]
  */
 public class VarDeclSqlNode implements SqlNode {
 
-  private final String name;
-  private final String expression;
+    /**
+     * 变量名称
+     */
+    private final String name;
+    /**
+     * 表达式
+     */
+    private final String expression;
 
-  public VarDeclSqlNode(String var, String exp) {
-    name = var;
-    expression = exp;
-  }
+    public VarDeclSqlNode(String var, String exp) {
+        name = var;
+        expression = exp;
+    }
 
-  @Override
-  public boolean apply(DynamicContext context) {
-    final Object value = OgnlCache.getValue(expression, context.getBindings());
-    context.bind(name, value);
-    return true;
-  }
+    @Override
+    public boolean apply(DynamicContext context) {
+        // 1. 通过 OGNL 表达式expression从DynamicContext上下文的ContextMap中获取转换后的结果
+        final Object value = OgnlCache.getValue(expression, context.getBindings());
+        // 2. 将 name 与转换后的结果绑定到DynamicContext上下文中，后续处理其他节点可以获取到
+        context.bind(name, value);
+        return true;
+    }
 
 }

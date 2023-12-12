@@ -21,14 +21,21 @@ import java.util.List;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * 继承了 TrimSqlNode 类，<where /> 标签对应的 SqlNode 实现类
+ * 基于 TrimSqlNode 类，定义了需要添加的前缀为WHERE和需要删除的前缀AND和OR
+ *
  * @author Clinton Begin
  */
 public class WhereSqlNode extends TrimSqlNode {
 
-  private static List<String> prefixList = Arrays.asList("AND ","OR ","AND\n", "OR\n", "AND\r", "OR\r", "AND\t", "OR\t");
+    /**
+     * 也是通过 TrimSqlNode ，这里定义需要删除的前缀
+     */
+    private static List<String> prefixList = Arrays.asList("AND ", "OR ", "AND\n", "OR\n", "AND\r", "OR\r", "AND\t", "OR\t");
 
-  public WhereSqlNode(Configuration configuration, SqlNode contents) {
-    super(configuration, contents, "WHERE", prefixList, null, null);
-  }
+    public WhereSqlNode(Configuration configuration, SqlNode contents) {
+        // 设置前缀和需要删除的前缀
+        super(configuration, contents, "WHERE", prefixList, null, null);
+    }
 
 }

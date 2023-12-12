@@ -16,26 +16,39 @@
 package org.apache.ibatis.scripting.xmltags;
 
 /**
+ * <if /> 标签对应的 SqlNode 实现类
  * @author Clinton Begin
  */
 public class IfSqlNode implements SqlNode {
-  private final ExpressionEvaluator evaluator;
-  private final String test;
-  private final SqlNode contents;
+    /**
+     * 表达式计算器
+     */
+    private final ExpressionEvaluator evaluator;
+    /**
+     * 判断条件的表达式
+     */
+    private final String test;
+    /**
+     * MixedSqlNode，包含该<if />节点内所有信息
+     */
+    private final SqlNode contents;
 
-  public IfSqlNode(SqlNode contents, String test) {
-    this.test = test;
-    this.contents = contents;
-    this.evaluator = new ExpressionEvaluator();
-  }
-
-  @Override
-  public boolean apply(DynamicContext context) {
-    if (evaluator.evaluateBoolean(test, context.getBindings())) {
-      contents.apply(context);
-      return true;
+    public IfSqlNode(SqlNode contents, String test) {
+        this.test = test;
+        this.contents = contents;
+        this.evaluator = new ExpressionEvaluator();
     }
-    return false;
-  }
+
+    @Override
+    public boolean apply(DynamicContext context) {
+        // 1. 判断是否符合条件
+        if (evaluator.evaluateBoolean(test, context.getBindings())) {
+            // 2. 解析该<if />节点中的内容
+            contents.apply(context);
+            return true;
+        }
+        // 3. 不符合
+        return false;
+    }
 
 }
