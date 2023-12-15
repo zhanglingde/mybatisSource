@@ -33,10 +33,21 @@ import org.w3c.dom.NodeList;
  * @author Clinton Begin
  */
 public class XMLScriptBuilder extends BaseBuilder {
-
+    /**
+     * 当前 SQL 的 XNode 对象
+     */
     private final XNode context;
+    /**
+     * 是否为动态 SQL
+     */
     private boolean isDynamic;
+    /**
+     * SQL 的 Java 入参类型
+     */
     private final Class<?> parameterType;
+    /**
+     * NodeNodeHandler 的映射
+     */
     private final Map<String, NodeHandler> nodeHandlerMap = new HashMap<>();
 
     public XMLScriptBuilder(Configuration configuration, XNode context) {
@@ -63,37 +74,54 @@ public class XMLScriptBuilder extends BaseBuilder {
         nodeHandlerMap.put("bind", new BindHandler());
     }
 
+    // 将 SQL 脚本（XML或者注解中定义的 SQL ）解析成 SqlSource 对象
     public SqlSource parseScriptNode() {
+        // 1. 将 SQL 解析成 MixedSqlNode 对象；（XML 或者注解中定义的 SQL）
         MixedSqlNode rootSqlNode = parseDynamicTags(context);
         SqlSource sqlSource;
         if (isDynamic) {
+            // 2. 动态语句，使用了MyBatis自定义的XML标签（<if />等）或者使用了${}，则封装成DynamicSqlSource对象
             sqlSource = new DynamicSqlSource(configuration, rootSqlNode);
         } else {
+            // 3. 否则就是静态SQL语句，封装成RawSqlSource对象
             sqlSource = new RawSqlSource(configuration, rootSqlNode, parameterType);
         }
         return sqlSource;
     }
 
+    // 将 SQL 脚本（XML或者注解中定义的 SQL ）解析成MixedSqlNode对象
     protected MixedSqlNode parseDynamicTags(XNode node) {
         List<SqlNode> contents = new ArrayList<>();
+        /*
+         * 2. 遍历 SQL 节点中所有子节点
+         * 这里会对该节点内的所有内容进行处理然后返回 NodeList 对象
+         * 1. 文本内容会被解析成 '<#text></#text>' 节点，就算一个换行符也会解析成这个
+         * 2. <![CDATA[ content ]]> 会被解析成 '<#cdata-section>content</#cdata-section>' 节点
+         * 3. 其他动态<if /> <where />
+         */
         NodeList children = node.getNode().getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
             XNode child = node.newXNode(children.item(i));
+            // 子节点是 <#text /> 或 <#cdata-section /> 类型
             if (child.getNode().getNodeType() == Node.CDATA_SECTION_NODE || child.getNode().getNodeType() == Node.TEXT_NODE) {
                 String data = child.getStringBody("");
                 TextSqlNode textSqlNode = new TextSqlNode(data);
                 if (textSqlNode.isDynamic()) {
+                    // 如果是动态的 TextSqlNode 对象，也就是使用了 '${}'；标记为动态 sql
                     contents.add(textSqlNode);
                     isDynamic = true;
                 } else {
+                    // 如果是非动态的 TextSqlNode 对象，没有使用 '${}'
                     contents.add(new StaticTextSqlNode(data));
                 }
-            } else if (child.getNode().getNodeType() == Node.ELEMENT_NODE) { // issue #628
+            } else if (child.getNode().getNodeType() == Node.ELEMENT_NODE) { // issue #628  // 子节点是 Mybatis 自定义标签
+                // 根据子节点的标签，获得对应的 NodeHandler 对象
                 String nodeName = child.getNode().getNodeName();
                 NodeHandler handler = nodeHandlerMap.get(nodeName);
-                if (handler == null) {
+                if (handler == null) {  // 未知标签
                     throw new BuilderException("Unknown element <" + nodeName + "> in SQL statement.");
                 }
+                // 执行 NodeHandler 处理并标记为动态 SQL
                 handler.handleNode(child, contents);
                 isDynamic = true;
             }
