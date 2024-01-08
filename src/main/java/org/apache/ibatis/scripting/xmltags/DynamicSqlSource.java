@@ -21,28 +21,37 @@ import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * 实现了SqlSource接口，动态SQL语句对应的 SqlSource 对象
+ *
  * @author Clinton Begin
  */
 public class DynamicSqlSource implements SqlSource {
 
-  private final Configuration configuration;
-  private final SqlNode rootSqlNode;
+    private final Configuration configuration;
+    /**
+     * 根 SqlNode 对象
+     */
+    private final SqlNode rootSqlNode;
 
-  public DynamicSqlSource(Configuration configuration, SqlNode rootSqlNode) {
-    this.configuration = configuration;
-    this.rootSqlNode = rootSqlNode;
-  }
+    public DynamicSqlSource(Configuration configuration, SqlNode rootSqlNode) {
+        this.configuration = configuration;
+        this.rootSqlNode = rootSqlNode;
+    }
 
-  @Override
-  public BoundSql getBoundSql(Object parameterObject) {
-    DynamicContext context = new DynamicContext(configuration, parameterObject);
-    rootSqlNode.apply(context);
-    SqlSourceBuilder sqlSourceParser = new SqlSourceBuilder(configuration);
-    Class<?> parameterType = parameterObject == null ? Object.class : parameterObject.getClass();
-    SqlSource sqlSource = sqlSourceParser.parse(context.getSql(), parameterType, context.getBindings());
-    BoundSql boundSql = sqlSource.getBoundSql(parameterObject);
-    context.getBindings().forEach(boundSql::setAdditionalParameter);
-    return boundSql;
-  }
+    @Override
+    public BoundSql getBoundSql(Object parameterObject) {
+        // 1. 创建本次解析的动态 SQL 语句的上下文
+        DynamicContext context = new DynamicContext(configuration, parameterObject);
+        // 2. 根据上下文应用整个 SqlNode
+        rootSqlNode.apply(context);
+        SqlSourceBuilder sqlSourceParser = new SqlSourceBuilder(configuration);
+        Class<?> parameterType = parameterObject == null ? Object.class : parameterObject.getClass();
+        // 3. 通过 SqlSourceBuilder 将应用后的 SQL 进行转换，变量替换成 ? 占位符，并生成对应的 ParameterMapping 集合
+        SqlSource sqlSource = sqlSourceParser.parse(context.getSql(), parameterType, context.getBindings());
+        BoundSql boundSql = sqlSource.getBoundSql(parameterObject);
+        // 4. 添加附加参数到 BoundSql 对象中，因为上一步创建的`BoundSql`对象时候传入的仅是入参信息，没有添加附加参数
+        context.getBindings().forEach(boundSql::setAdditionalParameter);
+        return boundSql;
+    }
 
 }

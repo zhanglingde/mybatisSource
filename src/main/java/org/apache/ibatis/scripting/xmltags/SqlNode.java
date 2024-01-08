@@ -20,6 +20,7 @@ package org.apache.ibatis.scripting.xmltags;
  * @author Clinton Begin
  */
 public interface SqlNode {
+
     /**
      * 应用当前 SQLNode 节点
      *

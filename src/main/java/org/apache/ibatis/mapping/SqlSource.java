@@ -16,6 +16,8 @@
 package org.apache.ibatis.mapping;
 
 /**
+ * SQL 资源接口，用于创建BoundSql对象（包含可执行的SQL语句与参数信息）
+ *
  * Represents the content of a mapped statement read from an XML file or an annotation.
  * It creates the SQL that will be passed to the database out of the input parameter received from the user.
  *
@@ -23,6 +25,6 @@ package org.apache.ibatis.mapping;
  */
 public interface SqlSource {
 
-  BoundSql getBoundSql(Object parameterObject);
+    BoundSql getBoundSql(Object parameterObject);
 
 }

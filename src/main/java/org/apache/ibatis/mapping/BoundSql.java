@@ -24,6 +24,8 @@ import org.apache.ibatis.reflection.property.PropertyTokenizer;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * 用于数据库可执行的 SQL 语句的最终封装对象，一个普通的实体类
+ *
  * An actual SQL String got from an {@link SqlSource} after having processed any dynamic content.
  * The SQL may have SQL placeholders "?" and an list (ordered) of an parameter mappings
  * with the additional information for each parameter (at least the property name of the input object to read
@@ -35,42 +37,54 @@ import org.apache.ibatis.session.Configuration;
  */
 public class BoundSql {
 
-  private final String sql;
-  private final List<ParameterMapping> parameterMappings;
-  private final Object parameterObject;
-  private final Map<String, Object> additionalParameters;
-  private final MetaObject metaParameters;
+    private final String sql;
+    /**
+     * 占位符 ? 对应的入参信息
+     */
+    private final List<ParameterMapping> parameterMappings;
+    /**
+     * 入参对象
+     */
+    private final Object parameterObject;
+    /**
+     * 附加参数集合
+     */
+    private final Map<String, Object> additionalParameters;
+    /**
+     * 附加参数的 MetaObject 对象，便于操作
+     */
+    private final MetaObject metaParameters;
 
-  public BoundSql(Configuration configuration, String sql, List<ParameterMapping> parameterMappings, Object parameterObject) {
-    this.sql = sql;
-    this.parameterMappings = parameterMappings;
-    this.parameterObject = parameterObject;
-    this.additionalParameters = new HashMap<>();
-    this.metaParameters = configuration.newMetaObject(additionalParameters);
-  }
+    public BoundSql(Configuration configuration, String sql, List<ParameterMapping> parameterMappings, Object parameterObject) {
+        this.sql = sql;
+        this.parameterMappings = parameterMappings;
+        this.parameterObject = parameterObject;
+        this.additionalParameters = new HashMap<>();
+        this.metaParameters = configuration.newMetaObject(additionalParameters);
+    }
 
-  public String getSql() {
-    return sql;
-  }
+    public String getSql() {
+        return sql;
+    }
 
-  public List<ParameterMapping> getParameterMappings() {
-    return parameterMappings;
-  }
+    public List<ParameterMapping> getParameterMappings() {
+        return parameterMappings;
+    }
 
-  public Object getParameterObject() {
-    return parameterObject;
-  }
+    public Object getParameterObject() {
+        return parameterObject;
+    }
 
-  public boolean hasAdditionalParameter(String name) {
-    String paramName = new PropertyTokenizer(name).getName();
-    return additionalParameters.containsKey(paramName);
-  }
+    public boolean hasAdditionalParameter(String name) {
+        String paramName = new PropertyTokenizer(name).getName();
+        return additionalParameters.containsKey(paramName);
+    }
 
-  public void setAdditionalParameter(String name, Object value) {
-    metaParameters.setValue(name, value);
-  }
+    public void setAdditionalParameter(String name, Object value) {
+        metaParameters.setValue(name, value);
+    }
 
-  public Object getAdditionalParameter(String name) {
-    return metaParameters.getValue(name);
-  }
+    public Object getAdditionalParameter(String name) {
+        return metaParameters.getValue(name);
+    }
 }

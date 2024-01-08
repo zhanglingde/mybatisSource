@@ -29,7 +29,7 @@ import java.util.HashMap;
  * attribute = name '=' value
  * </pre>
  *
- * 参数表达式处理器，在ParameterMappingTokenHandler处理#{}的内容时需要通过其解析成key-value键值对
+ * 参数表达式处理器，在 ParameterMappingTokenHandler 处理 #{} 的内容时需要通过其解析成 key-value 键值对
  *
  * @author Frank D. Martinez [mnesarco]
  */

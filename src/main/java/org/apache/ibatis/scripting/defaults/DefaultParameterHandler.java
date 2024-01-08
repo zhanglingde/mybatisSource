@@ -33,7 +33,7 @@ import org.apache.ibatis.type.TypeHandler;
 import org.apache.ibatis.type.TypeHandlerRegistry;
 
 /**
- * 默认参数处理器
+ * 默认参数处理器（），用于将入参设置到 java.sql.PreparedStatement 预编译对象中
  *
  * @author Clinton Begin
  * @author Eduardo Macarron
@@ -69,36 +69,38 @@ public class DefaultParameterHandler implements ParameterHandler {
     /**
      * 设置参数
      *
-     * @param ps
+     * @param ps 预编译对象
      */
     @Override
     public void setParameters(PreparedStatement ps) {
         ErrorContext.instance().activity("setting parameters").object(mappedStatement.getParameterMap().getId());
-        // 取出 sql 中映射的参数列表
+        // 1. 获取 sql 中映射的参数列表
         List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
         if (parameterMappings != null) {
             for (int i = 0; i < parameterMappings.size(); i++) {
                 ParameterMapping parameterMapping = parameterMappings.get(i);
-                // 过滤掉存储过程中的输出参数
+                // 2. 过滤掉存储过程中的输出参数（OUT 表示参数仅作为出参，非 OUT 也就是需要作为入参）
                 if (parameterMapping.getMode() != ParameterMode.OUT) {
-                    // 记录绑定的实参
+                    // 3. 记录绑定的实参
                     Object value;
-                    // 获取参数名称
+                    // 获取入参的属性名
                     String propertyName = parameterMapping.getProperty();
+                    // 获取入参的实际值
                     if (boundSql.hasAdditionalParameter(propertyName)) { // issue #448 ask first for additional params
-                        // 若有额外的参数，设为额外的参数
+                        // 在附加参数集合（<bind />标签生成的）中获取
                         value = boundSql.getAdditionalParameter(propertyName);
                     } else if (parameterObject == null) {
-                        // 若参数为 null，直接设为  null
+                        // 入参为 null 则该属性也定义为 null
                         value = null;
                     } else if (typeHandlerRegistry.hasTypeHandler(parameterObject.getClass())) {
-                        // 若参数有相应的 TypeHandler，直接设 object
+                        // 有类型处理器，则直接获取入参对象
                         value = parameterObject;
                     } else {
-                        // 除此以外，MetaObject.getValue 反射取得值设进去
+                        // 创建入参对应的 MetaObject 对象并获取该属性的值
                         MetaObject metaObject = configuration.newMetaObject(parameterObject);
                         value = metaObject.getValue(propertyName);
                     }
+                    // 4. 获取参数类型处理器和 jdbcType
                     TypeHandler typeHandler = parameterMapping.getTypeHandler();
                     JdbcType jdbcType = parameterMapping.getJdbcType();
                     if (value == null && jdbcType == null) {
@@ -106,6 +108,7 @@ public class DefaultParameterHandler implements ParameterHandler {
                         jdbcType = configuration.getJdbcTypeForNull();
                     }
                     try {
+                        // 5. 通过定义的 TypeHandler 参数类型处理器将 value 设置到对应的占位符
                         // 调用 PreparedStatement.set* 方法为 SQL 语句绑定相应的实参
                         typeHandler.setParameter(ps, i + 1, value, jdbcType);
                     } catch (TypeException | SQLException e) {
