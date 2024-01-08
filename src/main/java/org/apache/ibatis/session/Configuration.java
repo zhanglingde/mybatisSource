@@ -733,9 +733,13 @@ public class Configuration {
      * @return
      */
     public StatementHandler newStatementHandler(Executor executor, MappedStatement mappedStatement, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) {
-        // 创建路由选择语句处理器
+        /*
+         * 创建 RoutingStatementHandler 路由对象
+         * 其中根据 StatementType 创建对应类型的 Statement 对象，默认为 PREPARED
+         * 执行的方法都会路由到该对象
+         */
         StatementHandler statementHandler = new RoutingStatementHandler(executor, mappedStatement, parameterObject, rowBounds, resultHandler, boundSql);
-        // 插入插件
+        // 插入插件，将 Configuration 全局配置中的所有插件应用在 StatementHandler 上面
         statementHandler = (StatementHandler) interceptorChain.pluginAll(statementHandler);
         return statementHandler;
     }
@@ -752,8 +756,10 @@ public class Configuration {
      * @return
      */
     public Executor newExecutor(Transaction transaction, ExecutorType executorType) {
+        // 1. 获得执行器类型
         executorType = executorType == null ? defaultExecutorType : executorType;
         executorType = executorType == null ? ExecutorType.SIMPLE : executorType;
+        // 2. 创建对应实现的 Executor 对象
         Executor executor;
         // 根据参数，选择合适的 Executor 实现（三种执行器：BatchExecutor/ReuseExecutor/SimpleExecutor）
         if (ExecutorType.BATCH == executorType) {
@@ -764,11 +770,11 @@ public class Configuration {
             executor = new SimpleExecutor(this, transaction);
         }
         // 根据配置决定是否开启二级缓存功能
-        // 如果要求缓存，生成另一种CachingExecutor(默认就是有缓存),装饰者模式,所以默认都是返回CachingExecutor
+        // 3. 如果要求缓存，生成另一种CachingExecutor(默认就是有缓存),装饰者模式,所以默认都是返回CachingExecutor
         if (cacheEnabled) {
             executor = new CachingExecutor(executor);
         }
-        // 调用插件，通过插件可以改变 Executor 行为
+        // 4. 调用插件，通过插件可以改变 Executor 行为
         executor = (Executor) interceptorChain.pluginAll(executor);
         return executor;
     }

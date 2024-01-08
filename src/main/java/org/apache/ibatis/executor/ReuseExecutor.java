@@ -38,76 +38,84 @@ import org.apache.ibatis.transaction.Transaction;
  */
 public class ReuseExecutor extends BaseExecutor {
 
-  private final Map<String, Statement> statementMap = new HashMap<>();
+    private final Map<String, Statement> statementMap = new HashMap<>();
 
-  public ReuseExecutor(Configuration configuration, Transaction transaction) {
-    super(configuration, transaction);
-  }
-
-  @Override
-  public int doUpdate(MappedStatement ms, Object parameter) throws SQLException {
-    Configuration configuration = ms.getConfiguration();
-    StatementHandler handler = configuration.newStatementHandler(this, ms, parameter, RowBounds.DEFAULT, null, null);
-    Statement stmt = prepareStatement(handler, ms.getStatementLog());
-    return handler.update(stmt);
-  }
-
-  @Override
-  public <E> List<E> doQuery(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) throws SQLException {
-    Configuration configuration = ms.getConfiguration();
-    StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, resultHandler, boundSql);
-    Statement stmt = prepareStatement(handler, ms.getStatementLog());
-    return handler.query(stmt, resultHandler);
-  }
-
-  @Override
-  protected <E> Cursor<E> doQueryCursor(MappedStatement ms, Object parameter, RowBounds rowBounds, BoundSql boundSql) throws SQLException {
-    Configuration configuration = ms.getConfiguration();
-    StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, null, boundSql);
-    Statement stmt = prepareStatement(handler, ms.getStatementLog());
-    return handler.queryCursor(stmt);
-  }
-
-  @Override
-  public List<BatchResult> doFlushStatements(boolean isRollback) {
-    for (Statement stmt : statementMap.values()) {
-      closeStatement(stmt);
+    public ReuseExecutor(Configuration configuration, Transaction transaction) {
+        super(configuration, transaction);
     }
-    statementMap.clear();
-    return Collections.emptyList();
-  }
 
-  private Statement prepareStatement(StatementHandler handler, Log statementLog) throws SQLException {
-    Statement stmt;
-    BoundSql boundSql = handler.getBoundSql();
-    String sql = boundSql.getSql();
-    if (hasStatementFor(sql)) {
-      stmt = getStatement(sql);
-      applyTransactionTimeout(stmt);
-    } else {
-      Connection connection = getConnection(statementLog);
-      stmt = handler.prepare(connection, transaction.getTimeout());
-      putStatement(sql, stmt);
+    @Override
+    public int doUpdate(MappedStatement ms, Object parameter) throws SQLException {
+        Configuration configuration = ms.getConfiguration();
+        StatementHandler handler = configuration.newStatementHandler(this, ms, parameter, RowBounds.DEFAULT, null, null);
+        Statement stmt = prepareStatement(handler, ms.getStatementLog());
+        return handler.update(stmt);
     }
-    handler.parameterize(stmt);
-    return stmt;
-  }
 
-  private boolean hasStatementFor(String sql) {
-    try {
-      Statement statement = statementMap.get(sql);
-      return statement != null && !statement.getConnection().isClosed();
-    } catch (SQLException e) {
-      return false;
+    @Override
+    public <E> List<E> doQuery(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) throws SQLException {
+        Configuration configuration = ms.getConfiguration();
+        StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, resultHandler, boundSql);
+        Statement stmt = prepareStatement(handler, ms.getStatementLog());
+        return handler.query(stmt, resultHandler);
     }
-  }
 
-  private Statement getStatement(String s) {
-    return statementMap.get(s);
-  }
+    @Override
+    protected <E> Cursor<E> doQueryCursor(MappedStatement ms, Object parameter, RowBounds rowBounds, BoundSql boundSql) throws SQLException {
+        Configuration configuration = ms.getConfiguration();
+        StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, null, boundSql);
+        Statement stmt = prepareStatement(handler, ms.getStatementLog());
+        return handler.queryCursor(stmt);
+    }
 
-  private void putStatement(String sql, Statement stmt) {
-    statementMap.put(sql, stmt);
-  }
+    @Override
+    public List<BatchResult> doFlushStatements(boolean isRollback) {
+        for (Statement stmt : statementMap.values()) {
+            closeStatement(stmt);
+        }
+        statementMap.clear();
+        return Collections.emptyList();
+    }
+
+    private Statement prepareStatement(StatementHandler handler, Log statementLog) throws SQLException {
+        Statement stmt;
+        BoundSql boundSql = handler.getBoundSql();
+        String sql = boundSql.getSql();
+        /*
+         * 根据需要执行的 SQL 语句判断 是否已有对应的 Statement 并且连接未关闭
+         */
+        if (hasStatementFor(sql)) {
+            // 从缓存中获得 Statement 对象
+            stmt = getStatement(sql);
+            // 重新设置事务超时时间
+            applyTransactionTimeout(stmt);
+        } else {
+            // 获得 Connection 对象，初始化 Statement 对象
+            Connection connection = getConnection(statementLog);
+            stmt = handler.prepare(connection, transaction.getTimeout());
+            // 将 Statement 添加到缓存中，key 值为 当前执行的 SQL 语句
+            putStatement(sql, stmt);
+        }
+        // 往 Statement 中设置 SQL 语句上的参数，例如 PrepareStatement 的 ? 占位符
+        handler.parameterize(stmt);
+        return stmt;
+    }
+
+    private boolean hasStatementFor(String sql) {
+        try {
+            Statement statement = statementMap.get(sql);
+            return statement != null && !statement.getConnection().isClosed();
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    private Statement getStatement(String s) {
+        return statementMap.get(s);
+    }
+
+    private void putStatement(String sql, Statement stmt) {
+        statementMap.put(sql, stmt);
+    }
 
 }

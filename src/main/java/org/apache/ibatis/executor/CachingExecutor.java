@@ -45,6 +45,7 @@ public class CachingExecutor implements Executor {
 
     public CachingExecutor(Executor delegate) {
         this.delegate = delegate;
+        // 设置 delegate 被当前执行器所包装
         delegate.setExecutorWrapper(this);
     }
 
@@ -74,8 +75,9 @@ public class CachingExecutor implements Executor {
 
     @Override
     public int update(MappedStatement ms, Object parameterObject) throws SQLException {
-        // 刷新完再 update
+        // 如果需要清空缓存，则进行清空
         flushCacheIfRequired(ms);
+        // 执行 delegate 对应的方法
         return delegate.update(ms, parameterObject);
     }
 
@@ -97,29 +99,29 @@ public class CachingExecutor implements Executor {
     @Override
     public <E> List<E> query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, CacheKey key, BoundSql boundSql)
             throws SQLException {
-        // 获取查询语句所在命名空间对应的二级缓存
+        // 1. 获取查询语句所在命名空间对应的二级缓存
         Cache cache = ms.getCache();
-        // 是否开启二级缓存
+        // 2. 是否开启二级缓存
         if (cache != null) {
-            // 根据 select 节点的配置，决定是否需要清空二级缓存
+            // 2.1 根据 select 节点的配置，决定是否需要清空二级缓存
             flushCacheIfRequired(ms);
-            // 检测 SQL 节点的 useCache 配置以及是否使用了 resultHandler 配置
+            // 2.2 如果当前操作需要使用缓存（默认开启）
             if (ms.isUseCache() && resultHandler == null) {
-                // 二级缓存不能保存输出类型的参数，如果查询操作调用了包含输出参数的存储过程，则报错
+                // 如果是存储过程相关操作，保证所有的参数模式为 ParameterMode.IN
                 ensureNoOutParams(ms, boundSql);
                 @SuppressWarnings("unchecked")
-                // 查询二级缓存
+                // 2.3 从二级缓存中获取结果，会装饰成 TransactionalCache
                 List<E> list = (List<E>) tcm.getObject(cache, key);
                 if (list == null) {
-                    // 二级缓存没有相应的结果对，调用封装的 Executor 对象的 query 方法
+                    // 2.4 缓存不存在，查询数据库
                     list = delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
-                    // 将查询结果保存到 TransactionalCache.entriesToAddOnCommit 集合中
+                    // 2.5 将缓存结果保存至 TransactionalCache.entriesToAddOnCommit 集合中
                     tcm.putObject(cache, key, list); // issue #578 and #116
                 }
                 return list;
             }
         }
-        // 没有启用二级缓存，执行查询数据库
+        // 2. 没有启用二级缓存，执行查询数据库
         return delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
     }
 
@@ -130,6 +132,7 @@ public class CachingExecutor implements Executor {
 
     @Override
     public void commit(boolean required) throws SQLException {
+        // 执行 delegate 对应的方法
         delegate.commit(required);
         // 遍历所有相关的TransactionalCache对象执行 commit 方法
         tcm.commit();
