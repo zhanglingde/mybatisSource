@@ -23,14 +23,38 @@ import java.util.List;
 import org.apache.ibatis.cursor.Cursor;
 
 /**
+ * 查询操作，通过ResultSetHandler对查询返回的结果集进行映射处理，转换成对应的Java对象，是 Sql 执行过程的最后一步
+ *
  * @author Clinton Begin
  */
 public interface ResultSetHandler {
 
-  <E> List<E> handleResultSets(Statement stmt) throws SQLException;
+    /**
+     * 处理 {@link java.sql.ResultSet} 成映射的对应的结果
+     *
+     * @param stmt Statement 对象
+     * @param <E>  泛型
+     * @return 结果数组
+     * @throws SQLException SQL异常
+     */
+    <E> List<E> handleResultSets(Statement stmt) throws SQLException;
 
-  <E> Cursor<E> handleCursorResultSets(Statement stmt) throws SQLException;
+    /**
+     * 处理 {@link java.sql.ResultSet} 成 Cursor 对象
+     *
+     * @param stmt Statement 对象
+     * @param <E>  泛型
+     * @return Cursor 对象
+     * @throws SQLException SQL异常
+     */
+    <E> Cursor<E> handleCursorResultSets(Statement stmt) throws SQLException;
 
-  void handleOutputParameters(CallableStatement cs) throws SQLException;
+    /**
+     * 暂时忽略，和存储过程相关
+     *
+     * @param cs CallableStatement 对象
+     * @throws SQLException SQL异常
+     */
+    void handleOutputParameters(CallableStatement cs) throws SQLException;
 
 }
