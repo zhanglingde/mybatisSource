@@ -23,43 +23,67 @@ import org.apache.ibatis.reflection.factory.ObjectFactory;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * 结果提取器，用于提取延迟加载对应的子查询的查询结果，转换成Java对象
+ *
  * @author Andrew Gustafson
  */
 public class ResultExtractor {
-  private final Configuration configuration;
-  private final ObjectFactory objectFactory;
+    private final Configuration configuration;
+    /**
+     * 实例工厂
+     */
+    private final ObjectFactory objectFactory;
 
-  public ResultExtractor(Configuration configuration, ObjectFactory objectFactory) {
-    this.configuration = configuration;
-    this.objectFactory = objectFactory;
-  }
-
-  public Object extractObjectFromList(List<Object> list, Class<?> targetType) {
-    Object value = null;
-    if (targetType != null && targetType.isAssignableFrom(list.getClass())) {
-      value = list;
-    } else if (targetType != null && objectFactory.isCollection(targetType)) {
-      value = objectFactory.create(targetType);
-      MetaObject metaObject = configuration.newMetaObject(value);
-      metaObject.addAll(list);
-    } else if (targetType != null && targetType.isArray()) {
-      Class<?> arrayComponentType = targetType.getComponentType();
-      Object array = Array.newInstance(arrayComponentType, list.size());
-      if (arrayComponentType.isPrimitive()) {
-        for (int i = 0; i < list.size(); i++) {
-          Array.set(array, i, list.get(i));
-        }
-        value = array;
-      } else {
-        value = list.toArray((Object[])array);
-      }
-    } else {
-      if (list != null && list.size() > 1) {
-        throw new ExecutorException("Statement returned more than one row, where no more than one was expected.");
-      } else if (list != null && list.size() == 1) {
-        value = list.get(0);
-      }
+    public ResultExtractor(Configuration configuration, ObjectFactory objectFactory) {
+        this.configuration = configuration;
+        this.objectFactory = objectFactory;
     }
-    return value;
-  }
+
+    /**
+     * 从 list 中，提取结果
+     *
+     * @param list list
+     * @param targetType 结果类型
+     * @return 结果
+     */
+    public Object extractObjectFromList(List<Object> list, Class<?> targetType) {
+        Object value = null;
+        /*
+         * 从查询结果中抽取数据转换成目标类型
+         */
+        if (targetType != null && targetType.isAssignableFrom(list.getClass())) {   // 1. 场景1，List 类型
+            // 直接返回
+            value = list;
+        } else if (targetType != null && objectFactory.isCollection(targetType)) {  // 2. 场景2,集合类型
+            // 2.1 创建集合的实例对象
+            value = objectFactory.create(targetType);
+            // 2.2 将结果添加到其中
+            MetaObject metaObject = configuration.newMetaObject(value);
+            // 2.3 将查询结果全部添加到集合对象中
+            metaObject.addAll(list);
+        } else if (targetType != null && targetType.isArray()) {    // 场景3: 数组类型
+            // 3.1 获取数组的成员类型
+            Class<?> arrayComponentType = targetType.getComponentType();
+            // 3.2 创建数组对象,并设置大小
+            Object array = Array.newInstance(arrayComponentType, list.size());
+            if (arrayComponentType.isPrimitive()) {
+                // 基本类型
+                for (int i = 0; i < list.size(); i++) {
+                    Array.set(array, i, list.get(i));
+                }
+                value = array;
+            } else {
+                // 将 List 转换成 Array
+                value = list.toArray((Object[]) array);
+            }
+        } else {    // 场景4
+            if (list != null && list.size() > 1) {
+                throw new ExecutorException("Statement returned more than one row, where no more than one was expected.");
+            } else if (list != null && list.size() == 1) {
+                // 取首个结果
+                value = list.get(0);
+            }
+        }
+        return value;
+    }
 }
