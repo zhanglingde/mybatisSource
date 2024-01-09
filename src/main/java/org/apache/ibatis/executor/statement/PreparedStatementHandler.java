@@ -48,9 +48,17 @@ public class PreparedStatementHandler extends BaseStatementHandler {
         // 调用 PreparedStatement.execute 和 PreparedStatement.getUpdateCount
         PreparedStatement ps = (PreparedStatement) statement;
         ps.execute();
+        // 获得更新数量
         int rows = ps.getUpdateCount();
         Object parameterObject = boundSql.getParameterObject();
+        /*
+         * 获得 KeyGenerator 对象
+         * 1. 配置了 <selectKey /> 则会生成 SelectKeyGenerator 对象
+         * 2. 配置了 useGeneratedKeys="true" 则会生成 Jdbc3KeyGenerator 对象
+         * 否则为 NoKeyGenerator 对象
+         */
         KeyGenerator keyGenerator = mappedStatement.getKeyGenerator();
+        // 执行 keyGenerator 的后置处理逻辑，也就是对我们配置的自增键进行赋值
         keyGenerator.processAfter(executor, mappedStatement, ps, parameterObject);
         return rows;
     }
@@ -58,6 +66,7 @@ public class PreparedStatementHandler extends BaseStatementHandler {
     @Override
     public void batch(Statement statement) throws SQLException {
         PreparedStatement ps = (PreparedStatement) statement;
+        // 添加到批处理
         ps.addBatch();
     }
 
@@ -81,14 +90,21 @@ public class PreparedStatementHandler extends BaseStatementHandler {
     protected Statement instantiateStatement(Connection connection) throws SQLException {
         // 获取绑定的 sql 语句
         String sql = boundSql.getSql();
-        // 根据 keyGenerator 字段的值，创建 PreparedStatement 对象
+        /*
+         * 获得 KeyGenerator 对象
+         * 1. 配置了 <selectKey /> 则会生成 SelectKeyGenerator 对象
+         * 2. 配置了 useGeneratedKeys="true" 则会生成 Jdbc3KeyGenerator 对象
+         * 否则为 NoKeyGenerator 对象
+         */
         if (mappedStatement.getKeyGenerator() instanceof Jdbc3KeyGenerator) {
+            // 1. 获得 keyColumn 配置
             String[] keyColumnNames = mappedStatement.getKeyColumns();
             if (keyColumnNames == null) {
-                // 返回数据库生成的主键
+                // 2. 创建 PreparedStatement 对象，并返回自增键，并可通过 getGeneratedKeys() 方法获取（返回数据库生成的主键）
                 return connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
             } else {
                 // 在 insert 语句执行完成之后，会将 keyColumnNames 指定的列返回
+                // 3. 创建 PreparedStatement 对象，并返回我们配置的 column 列名自增键，并可通过 getGeneratedKeys() 方法获取
                 return connection.prepareStatement(sql, keyColumnNames);
             }
         } else if (mappedStatement.getResultSetType() == ResultSetType.DEFAULT) {
@@ -102,7 +118,7 @@ public class PreparedStatementHandler extends BaseStatementHandler {
 
     @Override
     public void parameterize(Statement statement) throws SQLException {
-        // 调用 ParameterHandler.setParameters 处理占位符
+        // 通过 DefaultParameterHandler 调用 ParameterHandler.setParameters 处理占位符
         parameterHandler.setParameters((PreparedStatement) statement);
     }
 

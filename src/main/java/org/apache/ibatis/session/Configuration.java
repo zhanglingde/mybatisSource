@@ -696,6 +696,7 @@ public class Configuration {
      * @return
      */
     public ParameterHandler newParameterHandler(MappedStatement mappedStatement, Object parameterObject, BoundSql boundSql) {
+        // 创建 ParameterHandler 对象
         ParameterHandler parameterHandler = mappedStatement.getLang().createParameterHandler(mappedStatement, parameterObject, boundSql);
         // 插入插件
         parameterHandler = (ParameterHandler) interceptorChain.pluginAll(parameterHandler);
@@ -717,6 +718,7 @@ public class Configuration {
                                                 ResultHandler resultHandler, BoundSql boundSql) {
         // 创建 DefaultResultSetHandler(稍老一点的版本 3.1 是创建 NestedResultSetHandler 或者 FastResultSetHandler)
         ResultSetHandler resultSetHandler = new DefaultResultSetHandler(executor, mappedStatement, parameterHandler, resultHandler, boundSql, rowBounds);
+        // 应用插件
         resultSetHandler = (ResultSetHandler) interceptorChain.pluginAll(resultSetHandler);
         return resultSetHandler;
     }
