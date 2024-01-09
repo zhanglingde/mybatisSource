@@ -40,6 +40,8 @@ import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.session.SqlSession;
 
 /**
+ * 默认的 SqlSession 实现类，调用 Executor 执行器，执行数据库操作
+ *
  * The default implementation for {@link SqlSession}.
  * Note that this class is not Thread-Safe.
  *
@@ -55,7 +57,7 @@ public class DefaultSqlSession implements SqlSession {
 
     private final boolean autoCommit;
     /**
-     * 当前缓存中是否有脏数据
+     * 当前缓存中是否有脏数据(是否发生数据变更)
      */
     private boolean dirty;
     /**
@@ -122,13 +124,17 @@ public class DefaultSqlSession implements SqlSession {
      */
     @Override
     public <K, V> Map<K, V> selectMap(String statement, Object parameter, String mapKey, RowBounds rowBounds) {
+        // 1.  执行查询
         final List<? extends V> list = selectList(statement, parameter, rowBounds);
+        // 2. 创建 DefaultMapResultHandler 对象
         final DefaultMapResultHandler<K, V> mapResultHandler = new DefaultMapResultHandler<>(mapKey,
                 configuration.getObjectFactory(), configuration.getObjectWrapperFactory(), configuration.getReflectorFactory());
+        // 3. 创建 DefaultResultContext 对象
         final DefaultResultContext<V> context = new DefaultResultContext<>();
         for (V o : list) {
-            // 循环用 DefaultMapResultHandler 处理每条记录
+            // 设置 DefaultResultContext 中
             context.nextResultObject(o);
+            // 循环用 DefaultMapResultHandler 处理每条记录
             mapResultHandler.handleResult(context);
         }
         // 注意这个 DefaultMapResultHandler 里面存了所有已处理的记录(内部实现可能就是一个Map)，最后再返回一个Map
@@ -176,9 +182,9 @@ public class DefaultSqlSession implements SqlSession {
 
     private <E> List<E> selectList(String statement, Object parameter, RowBounds rowBounds, ResultHandler handler) {
         try {
-            // 根据 id 找到 MappedStatement
+            // 1. 根据 id 找到 MappedStatement
             MappedStatement ms = configuration.getMappedStatement(statement);
-            // 使用执行器查询结果，这里传入的 ResultHandler 是 null
+            // 2. 使用执行器查询结果，这里传入的 ResultHandler 是 null
             return executor.query(ms, wrapCollection(parameter), rowBounds, handler);
         } catch (Exception e) {
             throw ExceptionFactory.wrapException("Error querying database.  Cause: " + e, e);
@@ -220,10 +226,10 @@ public class DefaultSqlSession implements SqlSession {
     @Override
     public int update(String statement, Object parameter) {
         try {
-            // 每次更新之前，dirty 标记设置为 true
+            // 1. 每次更新之前，dirty 标记设置为 true
             dirty = true;
             MappedStatement ms = configuration.getMappedStatement(statement);
-            // 执行器执行 update 操作
+            // 执行器执行 update 更新操作
             return executor.update(ms, wrapCollection(parameter));
         } catch (Exception e) {
             throw ExceptionFactory.wrapException("Error updating database.  Cause: " + e, e);

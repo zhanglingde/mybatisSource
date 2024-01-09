@@ -24,21 +24,23 @@ import java.util.List;
  */
 public class InterceptorChain {
 
-  private final List<Interceptor> interceptors = new ArrayList<>();
+    private final List<Interceptor> interceptors = new ArrayList<>();
 
-  public Object pluginAll(Object target) {
-    for (Interceptor interceptor : interceptors) {
-      target = interceptor.plugin(target);
+    public Object pluginAll(Object target) {
+        // 遍历拦截器集合
+        for (Interceptor interceptor : interceptors) {
+            // 调用拦截器的 plugin 方法植入相应的插件逻辑
+            target = interceptor.plugin(target);
+        }
+        return target;
     }
-    return target;
-  }
 
-  public void addInterceptor(Interceptor interceptor) {
-    interceptors.add(interceptor);
-  }
+    public void addInterceptor(Interceptor interceptor) {
+        interceptors.add(interceptor);
+    }
 
-  public List<Interceptor> getInterceptors() {
-    return Collections.unmodifiableList(interceptors);
-  }
+    public List<Interceptor> getInterceptors() {
+        return Collections.unmodifiableList(interceptors);
+    }
 
 }

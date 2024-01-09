@@ -193,6 +193,8 @@ public class ParamNameResolver {
     }
 
     /**
+     * 将集合类型的参数包装成 StrictMap 对象
+     *
      * Wrap to a {@link ParamMap} if object is {@link Collection} or array.
      *
      * @param object          a parameter object
@@ -213,7 +215,7 @@ public class ParamNameResolver {
             Optional.ofNullable(actualParamName).ifPresent(name -> map.put(name, object));
             return map;
         } else if (object != null && object.getClass().isArray()) {
-            // 参数若是数组型，，做array标记
+            // 参数若是数组型，，做 array 标记
             ParamMap<Object> map = new ParamMap<>();
             map.put("array", object);
             Optional.ofNullable(actualParamName).ifPresent(name -> map.put(name, object));

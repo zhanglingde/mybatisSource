@@ -69,7 +69,7 @@ public class MapperMethod {
             case INSERT: {
                 // 使用 ParamNameResolver 处理 args 数组，将用户传入的实参与指定参数名称关联起来
                 Object param = method.convertArgsToSqlCommandParam(args);
-                // 调用sqlSession.insert 方法，rowCountResult 方法会根据 method 字段中记录的方法的返回值类型对结果进行转换
+                // 调用 sqlSession.insert 方法，rowCountResult 方法会根据 method 字段中记录的方法的返回值类型对结果进行转换
                 result = rowCountResult(sqlSession.insert(command.getName(), param));
                 break;
             }
@@ -84,22 +84,19 @@ public class MapperMethod {
                 break;
             }
             case SELECT:
-                // 处理返回值为 void 是 ResultSet 通过 ResultHandler 处理的方法
+                // 执行查询
                 if (method.returnsVoid() && method.hasResultHandler()) {
-                    // 如果有结果处理器
+                    // 返回 void，且入参中有 ResultHandler 结果处理器
                     executeWithResultHandler(sqlSession, args);
                     result = null;
-                } else if (method.returnsMany()) {
-                    // 处理返回值为集合和数据的方法,如果结果有多条记录
+                } else if (method.returnsMany()) {  // 返回列表
                     result = executeForMany(sqlSession, args);
-                } else if (method.returnsMap()) {
-                    // 处理返回结果是 Map 的方法
+                } else if (method.returnsMap()) {   // 返回 Map
                     result = executeForMap(sqlSession, args);
-                } else if (method.returnsCursor()) {
-                    // 处理返回值是 Cursor 的方法
+                } else if (method.returnsCursor()) {    // 返回 Cursor
                     result = executeForCursor(sqlSession, args);
-                } else {
-                    // 处理返回值为单一对象的方法
+                } else {    // 返回单个对象
+                    // 获取参数名称与入参的映射
                     Object param = method.convertArgsToSqlCommandParam(args);
                     result = sqlSession.selectOne(command.getName(), param);
                     if (method.returnsOptional()
@@ -114,6 +111,7 @@ public class MapperMethod {
             default:
                 throw new BindingException("Unknown execution method for: " + command.getName());
         }
+        // 返回结果为 null ，并且返回类型为原始类型（基本类型），则抛出 BindingException 异常
         if (result == null && method.getReturnType().isPrimitive() && !method.returnsVoid()) {
             throw new BindingException("Mapper method '" + command.getName()
                     + " attempted to return null from a method with a primitive return type (" + method.getReturnType() + ").");
@@ -152,16 +150,24 @@ public class MapperMethod {
      * @param args
      */
     private void executeWithResultHandler(SqlSession sqlSession, Object[] args) {
+        // 1. 获得 MappedStatement 对象
         MappedStatement ms = sqlSession.getConfiguration().getMappedStatement(command.getName());
+        /*
+         * 2. 配置校验
+         * 因为入参定义了 ResultHandler 结果处理器，所以如果不是存储过程，且没有配置返回结果的 Java Type，则会抛出异常
+         */
         if (!StatementType.CALLABLE.equals(ms.getStatementType())
                 && void.class.equals(ms.getResultMaps().get(0).getType())) {
             throw new BindingException("method " + command.getName()
                     + " needs either a @ResultMap annotation, a @ResultType annotation,"
                     + " or a resultType attribute in XML so a ResultHandler can be used as a parameter.");
         }
+        // 3. 获取参数名称与入参的映射
         Object param = method.convertArgsToSqlCommandParam(args);
-        if (method.hasRowBounds()) {
+        // 4. 执行数据库查询操作
+        if (method.hasRowBounds()) {    // 入参定义了 RowBounds 分页对象
             RowBounds rowBounds = method.extractRowBounds(args);
+            // 执行查询
             sqlSession.select(command.getName(), param, rowBounds, method.extractResultHandler(args));
         } else {
             sqlSession.select(command.getName(), param, method.extractResultHandler(args));
@@ -177,21 +183,29 @@ public class MapperMethod {
      */
     private <E> Object executeForMany(SqlSession sqlSession, Object[] args) {
         List<E> result;
+        // 获取参数名称与入参的映射
         Object param = method.convertArgsToSqlCommandParam(args);
+        // 执行数据库查询操作
         if (method.hasRowBounds()) {
             RowBounds rowBounds = method.extractRowBounds(args);
+            // 执行查询，返回 List 集合
             result = sqlSession.selectList(command.getName(), param, rowBounds);
         } else {
+            // 执行查询，返回 List 集合
             result = sqlSession.selectList(command.getName(), param);
         }
         // issue #510 Collections & arrays support
+        // 封装 Array 或 Collection 结果
         if (!method.getReturnType().isAssignableFrom(result.getClass())) {
             if (method.getReturnType().isArray()) {
+                // 将 List 转换成 Array 数组类型的结果
                 return convertToArray(result);
             } else {
+                // 转换成其他 Collection 集合类型的结果
                 return convertToDeclaredCollection(sqlSession.getConfiguration(), result);
             }
         }
+        // 直接返回 List 集合类型的结果
         return result;
     }
 
@@ -235,8 +249,10 @@ public class MapperMethod {
     private <K, V> Map<K, V> executeForMap(SqlSession sqlSession, Object[] args) {
         Map<K, V> result;
         // 转换实参列表
+        // 获取参数名称与入参的映射
         Object param = method.convertArgsToSqlCommandParam(args);
         if (method.hasRowBounds()) {
+            // 执行 SELECT 操作
             RowBounds rowBounds = method.extractRowBounds(args);
             // 通过 selectMap 完成查询操作
             result = sqlSession.selectMap(command.getName(), param, method.getMapKey(), rowBounds);
