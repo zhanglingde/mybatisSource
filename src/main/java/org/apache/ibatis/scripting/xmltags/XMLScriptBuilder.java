@@ -30,6 +30,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
+ * ，负责将 SQL 脚本（XML或者注解中定义的 SQL ）解析成 SqlSource 对象
+ *
  * @author Clinton Begin
  */
 public class XMLScriptBuilder extends BaseBuilder {
@@ -80,24 +82,24 @@ public class XMLScriptBuilder extends BaseBuilder {
         MixedSqlNode rootSqlNode = parseDynamicTags(context);
         SqlSource sqlSource;
         if (isDynamic) {
-            // 2. 动态语句，使用了MyBatis自定义的XML标签（<if />等）或者使用了${}，则封装成DynamicSqlSource对象
+            // 2. 动态语句，使用了 MyBatis 自定义的 XML 标签（<if />等）或者使用了${}，则封装成 DynamicSqlSource 对象
             sqlSource = new DynamicSqlSource(configuration, rootSqlNode);
         } else {
-            // 3. 否则就是静态SQL语句，封装成RawSqlSource对象
+            // 3. 否则就是静态SQL语句，封装成 RawSqlSource 对象
             sqlSource = new RawSqlSource(configuration, rootSqlNode, parameterType);
         }
         return sqlSource;
     }
 
-    // 将 SQL 脚本（XML或者注解中定义的 SQL ）解析成MixedSqlNode对象
+    // 将 SQL 脚本（XML或者注解中定义的 SQL ）解析成 MixedSqlNode 对象
     protected MixedSqlNode parseDynamicTags(XNode node) {
         List<SqlNode> contents = new ArrayList<>();
         /*
-         * 2. 遍历 SQL 节点中所有子节点
+         * 1. 遍历 SQL 节点中所有子节点
          * 这里会对该节点内的所有内容进行处理然后返回 NodeList 对象
          * 1. 文本内容会被解析成 '<#text></#text>' 节点，就算一个换行符也会解析成这个
          * 2. <![CDATA[ content ]]> 会被解析成 '<#cdata-section>content</#cdata-section>' 节点
-         * 3. 其他动态<if /> <where />
+         * 3. 其他动态 <if /> <where />
          */
         NodeList children = node.getNode().getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
@@ -115,13 +117,13 @@ public class XMLScriptBuilder extends BaseBuilder {
                     contents.add(new StaticTextSqlNode(data));
                 }
             } else if (child.getNode().getNodeType() == Node.ELEMENT_NODE) { // issue #628  // 子节点是 Mybatis 自定义标签
-                // 根据子节点的标签，获得对应的 NodeHandler 对象
+                // 2. 根据子节点的标签，获得对应的 NodeHandler 对象
                 String nodeName = child.getNode().getNodeName();
                 NodeHandler handler = nodeHandlerMap.get(nodeName);
                 if (handler == null) {  // 未知标签
                     throw new BuilderException("Unknown element <" + nodeName + "> in SQL statement.");
                 }
-                // 执行 NodeHandler 处理并标记为动态 SQL
+                // 3. 执行 NodeHandler 处理并标记为动态 SQL
                 handler.handleNode(child, contents);
                 isDynamic = true;
             }
@@ -144,6 +146,12 @@ public class XMLScriptBuilder extends BaseBuilder {
 
     /**
      * <bind />元素允许你在 OGNL 表达式(SQL语句)以外创建一个变量，并将其绑定到当前的上下文
+     *
+     * <select id="selectBlogsLike" resultType="Blog">
+     *   <bind name="pattern" value="'%' + _parameter.getTitle() + '%'" />
+     *   SELECT * FROM BLOG
+     *   WHERE title LIKE #{pattern}
+     * </select>
      */
     private class BindHandler implements NodeHandler {
         public BindHandler() {
@@ -196,7 +204,7 @@ public class XMLScriptBuilder extends BaseBuilder {
 
         @Override
         public void handleNode(XNode nodeToHandle, List<SqlNode> targetContents) {
-            // 1. 解析<where />标签内部的子标签节点，嵌套解析，生成MixedSqlNode对象
+            // 1. 解析<where /> 标签内部的子标签节点，嵌套解析，生成 MixedSqlNode 对象
             MixedSqlNode mixedSqlNode = parseDynamicTags(nodeToHandle);
             // 2. 创建 WhereSqlNode 对象，该对象继承了 TrimSqlNode，自定义前缀（WHERE）和需要删除的前缀（AND、OR等）
             WhereSqlNode where = new WhereSqlNode(configuration, mixedSqlNode);

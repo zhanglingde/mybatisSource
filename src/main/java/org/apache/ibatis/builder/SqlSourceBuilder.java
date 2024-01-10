@@ -30,6 +30,9 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.type.JdbcType;
 
 /**
+ * 继承了BaseBuilder抽象类，SqlSource构建器，
+ * 负责将SQL语句中的#{}替换成相应的?占位符，并获取该?占位符对应的 org.apache.ibatis.mapping.ParameterMapping 对象
+ *
  * @author Clinton Begin
  */
 public class SqlSourceBuilder extends BaseBuilder {
@@ -53,7 +56,7 @@ public class SqlSourceBuilder extends BaseBuilder {
      */
     public SqlSource parse(String originalSql, Class<?> parameterType, Map<String, Object> additionalParameters) {
         ParameterMappingTokenHandler handler = new ParameterMappingTokenHandler(configuration, parameterType, additionalParameters);
-        // 创建GenericTokenParser对象，用于处理#{}中的内容，通过handler将其转换成?占位符，并创建对应的ParameterMapping对象
+        // 创建 GenericTokenParser 对象，用于处理 #{} 中的内容，通过 handler 将其转换成 ? 占位符，并创建对应的 ParameterMapping 对象
         GenericTokenParser parser = new GenericTokenParser("#{", "}", handler);
         String sql;
         /*

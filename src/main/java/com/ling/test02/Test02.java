@@ -8,7 +8,6 @@ import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
-import java.util.List;
 
 public class Test02 {
 
@@ -37,7 +36,7 @@ public class Test02 {
         //     System.out.println("添加成功");
         // }
 
-        User user = userMapper.queryById(2);
+        User user = userMapper.selectById(2);
         System.out.println("user = " + user);
 
         // userMapper.deleteById(1);

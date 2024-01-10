@@ -140,7 +140,7 @@ public class DynamicContext {
         }
     }
 
-    // DynamicContext的内部静态类，实现 ognl.PropertyAccessor 接口，上下文访问器
+    // DynamicContext 的内部静态类，实现 ognl.PropertyAccessor 接口，上下文访问器
     static class ContextAccessor implements PropertyAccessor {
 
         @Override

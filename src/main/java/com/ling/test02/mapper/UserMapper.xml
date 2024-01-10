@@ -4,12 +4,31 @@
 		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!-- namespace命名空间，为了对sql语句进行隔离，方便管理 ，mapper开发dao方式，使用namespace有特殊作用 -->
 <mapper namespace="com.ling.test02.mapper.UserMapper">
+	
+	<parameterMap id="customMap" type="com.ling.test02.entity.User">
+		<parameter property="userId" javaType="java.lang.Integer"/>
+		<parameter property="userName" javaType="java.lang.String"/>
+	</parameterMap>
+
+	<resultMap id="user" type="com.ling.test02.entity.User">
+		<id property="userId" column="user_id"/>
+		<result property="userName" column="user_name"/>
+		<result property="age" column="user_age"/>
+		<result property="password" column="user_pwd"/>
+	</resultMap>
+
+	<select id="selectById" parameterType="int" resultMap="user">
+		select *
+		from user
+		where user_id = #{userid}
+	</select>
+	
 	<!-- dao模式映射到接口的名称，不是dao模式直接映射到包名就好（反射读取路径） -->
 	<!-- 在mapper.xml文件中配置很多的sql语句，执行每个sql语句时，封装为MappedStatement对象mapper.xml以statement为单位管理sql语句
 	 -->
 	<insert id="addUser" parameterType="com.ling.test02.entity.User">
 		insert into user(user_name, user_pwd, user_age)
-		values (#{user_name}, #{user_pwd}, #{user_age})
+		values (#{userName}, #{password}, #{age})
 	</insert>
 
 	<!-- 如果传入的参数是一个基本数据类型，那么除了声明该类型以外，sql代码的传入参数的名称可以随便定义 -->
@@ -18,12 +37,6 @@
 		delete from user where user_id=#{abc}
 	</delete>
 
-
-	<select id="queryById" parameterType="int" resultType="com.ling.test02.entity.User">
-		select *
-		from user
-		where user_id = #{userid}
-	</select>
 
 	<!-- 即使返回的是集合类型的数据，那么这边依旧使用resulttype，并且其值为集合中的数据类型 -->
 	<select id="queryAllUser" resultType="com.ling.test02.entity.User">
@@ -40,7 +53,7 @@
 	</select>
 
 	<!-- 如果传入的一个String参数，那么变量名可以随便写 -->
-	<select id="queryByName" parameterType="String" resultType="com.ling.test02.entity.User">
+	<select id="selectByName" parameterType="String" resultType="com.ling.test02.entity.User">
 		select *
 		from user
 		where user_name = '${_parameter}'

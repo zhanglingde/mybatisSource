@@ -13,13 +13,13 @@ public interface UserMapper {
 
     boolean updateUserById(User user);
 
-    User queryById(Integer userid);
+    User selectById(Integer id);
 
     List<User> queryAllUser();
 
     User checkLogin(String name, String pwd);
 
-    User queryByName(String name);
+    User selectByName(String name);
 
     List<User> queryByKey(String key);
 

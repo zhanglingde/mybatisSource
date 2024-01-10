@@ -32,7 +32,7 @@ import org.apache.ibatis.session.Configuration;
 public class TrimSqlNode implements SqlNode {
 
     /**
-     * MixedSqlNode，包含该<if />节点内所有信息
+     * MixedSqlNode，包含该 <if />节点内所有信息
      */
     private final SqlNode contents;
     /**

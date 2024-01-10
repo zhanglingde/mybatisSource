@@ -88,7 +88,7 @@ public class ResultMap {
     /**
      * 是否开启自动匹配
      *
-     * 如果设置这个属性，MyBatis将会为这个ResultMap开启或者关闭自动映射。这个属性会覆盖全局的属性
+     * 如果设置这个属性，MyBatis 将会为这个 ResultMap 开启或者关闭自动映射。这个属性会覆盖全局的属性
      * autoMappingBehavior。默认值为：unset。
      */
     private Boolean autoMapping;

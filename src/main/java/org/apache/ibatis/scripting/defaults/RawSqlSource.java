@@ -27,6 +27,7 @@ import org.apache.ibatis.session.Configuration;
 
 /**
  * 实现了SqlSource接口，静态SQL语句对应的SqlSource对象
+ *
  * <p>
  * Static SqlSource. It is faster than {@link DynamicSqlSource} because mappings are
  * calculated during startup.

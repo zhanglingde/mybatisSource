@@ -119,7 +119,7 @@ public final class MappedStatement {
      */
     private Log statementLog;
     /**
-     * 语言驱动，默认为XMLLanguageDriver
+     * 语言驱动，默认为 XMLLanguageDriver
      */
     private LanguageDriver lang;
     /**

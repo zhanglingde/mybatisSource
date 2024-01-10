@@ -25,7 +25,9 @@ import org.apache.ibatis.builder.BuilderException;
 
 /**
  * Caches OGNL parsed expressions.
- * 用于处理Ognl表达式
+ * 用于处理 Ognl 表达式
+ *
+ * 在 SqlNode 的 apply 方法中，使用到的逻辑判断时获取表达式的结果则需要通过OgnlCache来进行解析
  *
  * @author Eduardo Macarron
  * @see <a href='https://github.com/mybatis/old-google-code-issues/issues/342'>Issue 342</a>
