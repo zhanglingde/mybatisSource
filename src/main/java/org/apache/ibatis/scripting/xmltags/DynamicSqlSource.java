@@ -38,6 +38,12 @@ public class DynamicSqlSource implements SqlSource {
         this.rootSqlNode = rootSqlNode;
     }
 
+    /**
+     * 调用：MapperStatement#getBoundSql()
+     *
+     * @param parameterObject 参数对象
+     * @return
+     */
     @Override
     public BoundSql getBoundSql(Object parameterObject) {
         // 1. 创建本次解析的动态 SQL 语句的上下文

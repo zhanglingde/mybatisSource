@@ -20,7 +20,11 @@
 	<select id="selectById" parameterType="int" resultMap="user">
 		select *
 		from user
-		where user_id = #{userid}
+		<where>
+			<if test="id != null">
+				user_id = #{id}
+			</if>
+		</where>
 	</select>
 	
 	<!-- dao模式映射到接口的名称，不是dao模式直接映射到包名就好（反射读取路径） -->

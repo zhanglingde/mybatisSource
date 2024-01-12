@@ -119,7 +119,7 @@ public class XMLMapperBuilder extends BaseBuilder {
         if (!configuration.isResourceLoaded(resource)) {
             // 2. 处理 <mapper /> 节点
             configurationElement(parser.evalNode("/mapper"));
-            // 3. 将 resource 添加到 Configuration.loadedResources 集合中保存
+            // 3. 将 resource 添加到 Configuration.loadedResources 集合中保存(判断是否加载过)
             configuration.addLoadedResource(resource);
             // 4. 绑定映射器到 namespace
             bindMapperForNamespace();

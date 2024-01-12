@@ -47,7 +47,7 @@ public class SqlSourceBuilder extends BaseBuilder {
     /**
      * 执行解析原始 SQL ，成为 SqlSource 对象
      *
-     * @param originalSql          原始 SQL
+     * @param originalSql          原始 SQL   select * from user where user_id = #{userid}
      * @param parameterType        参数类型
      * @param additionalParameters 上下文的参数集合，包含附加参数集合（通过 <bind /> 标签生成的，或者`<foreach />`标签中的集合的元素）
      *                             RawSqlSource传入空集合
@@ -56,13 +56,15 @@ public class SqlSourceBuilder extends BaseBuilder {
      */
     public SqlSource parse(String originalSql, Class<?> parameterType, Map<String, Object> additionalParameters) {
         ParameterMappingTokenHandler handler = new ParameterMappingTokenHandler(configuration, parameterType, additionalParameters);
-        // 创建 GenericTokenParser 对象，用于处理 #{} 中的内容，通过 handler 将其转换成 ? 占位符，并创建对应的 ParameterMapping 对象
+        // 1. 创建 GenericTokenParser 对象，用于处理 #{} 中的内容，通过 handler 将其转换成 ? 占位符，并创建对应的 ParameterMapping 对象
         GenericTokenParser parser = new GenericTokenParser("#{", "}", handler);
         String sql;
         /*
          * 2. 执行解析
          * 将我们在 SQL 定义的所有占位符 #{content} 都替换成 ?
          * 并生成对应的 ParameterMapping 对象保存在 ParameterMappingTokenHandler 中
+         *
+         * sql：select * from user where user_id = ?
          */
         if (configuration.isShrinkWhitespacesInSql()) {
             sql = parser.parse(removeExtraWhitespaces(originalSql));

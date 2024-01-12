@@ -1,6 +1,7 @@
 package com.ling.test02.mapper;
 
 import com.ling.test02.entity.User;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -13,7 +14,7 @@ public interface UserMapper {
 
     boolean updateUserById(User user);
 
-    User selectById(Integer id);
+    User selectById(@Param("id") Integer id);
 
     List<User> queryAllUser();
 
