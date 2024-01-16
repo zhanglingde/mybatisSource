@@ -40,7 +40,14 @@ import org.apache.ibatis.transaction.Transaction;
  */
 public class CachingExecutor implements Executor {
 
+    /**
+     * 被委托的 Executor 对象，执行具体的数据库操作
+     */
     private final Executor delegate;
+    /**
+     * 支持事务的缓存管理器，因为二级缓存是支持跨 SqlSession 共享的，此处需要考虑事务，
+     * 那么，必然需要做到事务提交时，才将当前事务中查询时产生的缓存，同步到二级缓存中，所以需要通过TransactionalCacheManager来实现
+     */
     private final TransactionalCacheManager tcm = new TransactionalCacheManager();
 
     public CachingExecutor(Executor delegate) {

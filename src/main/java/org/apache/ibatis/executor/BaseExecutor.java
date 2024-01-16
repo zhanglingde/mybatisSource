@@ -63,12 +63,13 @@ public abstract class BaseExecutor implements Executor {
      */
     protected PerpetualCache localCache;
     /**
-     * 本地输入参数缓存
+     * 本地输入参数缓存，和存储过程有关
      */
     protected PerpetualCache localOutputParameterCache;
+
     protected Configuration configuration;
 
-    // 用来记录嵌套查询的层数
+    // 用来记录嵌套查询的层数，记录当前会话正在查询的数量
     protected int queryStack;
     private boolean closed;
 
@@ -152,7 +153,7 @@ public abstract class BaseExecutor implements Executor {
 
     @Override
     public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
-        // 得到绑定 sql
+        // 得到绑定 sql(动态 sql 会解析成 ?)
         BoundSql boundSql = ms.getBoundSql(parameter);
         // 创建缓存 key
         CacheKey key = createCacheKey(ms, parameter, rowBounds, boundSql);

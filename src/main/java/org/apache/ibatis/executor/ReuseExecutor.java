@@ -92,6 +92,7 @@ public class ReuseExecutor extends BaseExecutor {
         } else {
             // 获得 Connection 对象，初始化 Statement 对象
             Connection connection = getConnection(statementLog);
+            // 初始化 Statement 对象
             stmt = handler.prepare(connection, transaction.getTimeout());
             // 将 Statement 添加到缓存中，key 值为 当前执行的 SQL 语句
             putStatement(sql, stmt);

@@ -28,6 +28,8 @@ import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.transaction.Transaction;
 
 /**
+ * 执行器接口
+ *
  * @author Clinton Begin
  */
 public interface Executor {
@@ -50,6 +52,9 @@ public interface Executor {
      */
     <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException;
 
+    /**
+     * 查询，返回 Cursor 游标
+     */
     <E> Cursor<E> queryCursor(MappedStatement ms, Object parameter, RowBounds rowBounds) throws SQLException;
 
     /**

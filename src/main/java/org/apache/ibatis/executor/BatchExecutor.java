@@ -36,6 +36,8 @@ import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.transaction.Transaction;
 
 /**
+ * 支持批量执行的 Executor 实现类（JDBC 不支持数据库查询的批处理）
+ *
  * @author Jeff Butler
  */
 public class BatchExecutor extends BaseExecutor {
@@ -43,7 +45,7 @@ public class BatchExecutor extends BaseExecutor {
     public static final int BATCH_UPDATE_RETURN_VALUE = Integer.MIN_VALUE + 1002;
 
     /**
-     * Statement 数组
+     * Statement 数组，维护了多个 Statement，一个对象对应一个 Sql
      */
     private final List<Statement> statementList = new ArrayList<>();
 
@@ -92,7 +94,7 @@ public class BatchExecutor extends BaseExecutor {
             Connection connection = getConnection(ms.getStatementLog());
             stmt = handler.prepare(connection, transaction.getTimeout());
             handler.parameterize(stmt);    // fix Issues 322
-            // 2.2 设置 currentSql 和 currentStatemen
+            // 2.2 设置 currentSql 和 currentStatement
             currentSql = sql;
             currentStatement = ms;
             // 2.3 添加 Statement 到 statementList 中

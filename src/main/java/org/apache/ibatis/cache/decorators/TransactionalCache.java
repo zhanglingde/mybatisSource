@@ -122,14 +122,17 @@ public class TransactionalCache implements Cache {
     }
 
     public void commit() {
+        // 1. 如果 clearOnCommit 为 true ，则清空 delegate 缓存
         if (clearOnCommit) {
             delegate.clear();
         }
+        // 将 entriesToAddOnCommit、entriesMissedInCache 刷入 delegate 中
         flushPendingEntries();
         reset();
     }
 
     public void rollback() {
+        // 从 delegate 移除出 entriesMissedInCache
         unlockMissedEntries();
         reset();
     }
