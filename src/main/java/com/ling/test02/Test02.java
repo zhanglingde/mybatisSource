@@ -1,5 +1,6 @@
 package com.ling.test02;
 
+import com.github.pagehelper.PageHelper;
 import com.ling.test02.entity.User;
 import com.ling.test02.mapper.UserMapper;
 import org.apache.ibatis.session.SqlSession;
@@ -8,6 +9,7 @@ import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
+import java.util.List;
 
 public class Test02 {
 
@@ -36,8 +38,12 @@ public class Test02 {
         //     System.out.println("添加成功");
         // }
 
-        User user = userMapper.selectById(2);
-        System.out.println("user = " + user);
+        // User user = userMapper.selectById(2);
+        // System.out.println("user = " + user);
+
+        PageHelper.startPage(1, 3);
+        List<User> list = userMapper.queryAllUser();
+        System.out.println("list = " + list);
 
         // userMapper.deleteById(1);
         //
