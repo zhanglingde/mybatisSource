@@ -72,6 +72,14 @@ public class TextSqlNode implements SqlNode {
         return new GenericTokenParser("${", "}", handler);
     }
 
+    /**
+     * 处理和替换 SQL 文本中的 ${} 占位符
+     *
+     * 1. 解析占位符：识别 SQL 文本中的 ${content} 格式的占位符
+     * 2. 值绑定：从上下文中获取参数值并替换占位符
+     * 3. OGNL 表达式处理：使用 OGNL 表达式引擎计算占位符中的表达式
+     * 4. 安全检查：对替换的值进行注入过滤检查
+     */
     private static class BindingTokenParser implements TokenHandler {
 
         private DynamicContext context;
@@ -109,8 +117,12 @@ public class TextSqlNode implements SqlNode {
         }
     }
 
+    /**
+     * 判断 SQL 文本中是否包含 ${} 占位符
+     */
     private static class DynamicCheckerTokenParser implements TokenHandler {
 
+        // 包含 ${} 时标记 true
         private boolean isDynamic;
 
         public DynamicCheckerTokenParser() {
