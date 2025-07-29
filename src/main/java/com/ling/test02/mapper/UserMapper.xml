@@ -17,6 +17,7 @@
 		<result property="password" column="user_pwd"/>
 	</resultMap>
 
+	<!-- 动态标签 -->
 	<select id="selectById" parameterType="int" resultMap="user">
 		select *
 		from user

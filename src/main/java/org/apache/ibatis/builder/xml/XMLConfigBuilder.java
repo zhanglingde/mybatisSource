@@ -630,7 +630,7 @@ public class XMLConfigBuilder extends BaseBuilder {
         if (parent != null) {
             // 0. 处理 mapper 子节点
             for (XNode child : parent.getChildren()) {
-                // 1. 如果是 package 标签，则扫描该包
+                // 1. 如果是 package 标签，则扫描该包(<package name="org.mybatis.builder"/> )
                 if ("package".equals(child.getName())) {
                     // 获得包名，添加到 configuration 中
                     String mapperPackage = child.getStringAttribute("name");
@@ -641,7 +641,7 @@ public class XMLConfigBuilder extends BaseBuilder {
                     String resource = child.getStringAttribute("resource");
                     String url = child.getStringAttribute("url");
                     String mapperClass = child.getStringAttribute("class");
-                    // 2. 使用相对于类路径的资源引用
+                    // 2. 使用相对于类路径的资源引用  <mapper resource="org/mybatis/builder/AuthorMapper.xml"/>
                     // 如果 mapper 节点指定了 resource 或 url 属性，则创建 XmlMapperBuilder 对象，并通过该对象解析resource或者url属性指定的mapper配置文件
                     if (resource != null && url == null && mapperClass == null) {
                         // 2.1. 使用类路径
@@ -652,7 +652,7 @@ public class XMLConfigBuilder extends BaseBuilder {
                             XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, resource, configuration.getSqlFragments());
                             mapperParser.parse();
                         }
-                    // 3. 使用完全限定资源定位符（URL）
+                    // 3. 使用完全限定资源定位符（URL）  <mapper url="file:///var/mappers/AuthorMapper.xml"/>
                     } else if (resource == null && url != null && mapperClass == null) {
                         // 3.1. 获得 url 的 InputStream 对象（使用绝对 url 路径）
                         ErrorContext.instance().resource(url);
@@ -661,7 +661,7 @@ public class XMLConfigBuilder extends BaseBuilder {
                             XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, url, configuration.getSqlFragments());
                             mapperParser.parse();
                         }
-                    // 4. 使用映射器接口实现类的完全限定类名（使用 java 类名）
+                    // 4. 使用映射器接口实现类的完全限定类名（使用 java 类名） <mapper class="org.mybatis.builder.AuthorMapper"/>
                     } else if (resource == null && url == null && mapperClass != null) {
                         // 获得 Mapper 接口 （如果 mapper 节点指定了 class 属性，则向 MapperRegistry 注册该 mapper 接口）
                         Class<?> mapperInterface = Resources.classForName(mapperClass);

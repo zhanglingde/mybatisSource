@@ -21,6 +21,8 @@ import java.util.Map;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * 处理结果映射的鉴别器：决定使用哪种具体的子类映射，JDBCType -> JavaType
+ *
  * @author Clinton Begin
  */
 public class Discriminator {

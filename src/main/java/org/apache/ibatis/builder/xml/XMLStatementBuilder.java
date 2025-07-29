@@ -142,7 +142,7 @@ public class XMLStatementBuilder extends BaseBuilder {
         }
 
         // 解析成 SqlSource，一般是 DynamicSqlSource
-        // <9> 创建对应的 SqlSource 对象，保存了该节点下 SQL 相关信息
+        // 9. 创建对应的 SqlSource 对象，保存了该节点下 SQL 相关信息
         // 据XMLLanguageDriver语言驱动创建 Sqlsource 对象，通过这个对象可以获取到对应的SQL语
         SqlSource sqlSource = langDriver.createSqlSource(configuration, context, parameterTypeClass);
         // 10. 获得 Statement 类型，默认 PREPARED；语句类型：STATEMENT, PREPARED, CALLABLE

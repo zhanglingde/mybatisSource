@@ -23,7 +23,7 @@ import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.session.Configuration;
 
 /**
- * 静态的 SqlSource 实现类
+ * 存储已经解析好的 SQL
  *
  * @author Clinton Begin
  */
