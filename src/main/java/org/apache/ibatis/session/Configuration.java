@@ -776,7 +776,7 @@ public class Configuration {
         if (cacheEnabled) {
             executor = new CachingExecutor(executor);
         }
-        // 4. 调用插件，通过插件可以改变 Executor 行为
+        // 4. 调用插件，通过插件可以改变 Executor 行为(返回代理对象)
         executor = (Executor) interceptorChain.pluginAll(executor);
         return executor;
     }

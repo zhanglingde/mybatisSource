@@ -17,6 +17,7 @@
 		<result property="password" column="user_pwd"/>
 	</resultMap>
 
+	<!-- 动态标签 -->
 	<select id="selectById" parameterType="int" resultMap="user">
 		select *
 		from user
@@ -43,7 +44,7 @@
 
 
 	<!-- 即使返回的是集合类型的数据，那么这边依旧使用resulttype，并且其值为集合中的数据类型 -->
-	<select id="queryAllUser" resultType="com.ling.test02.entity.User">
+	<select id="queryAllUser" resultMap="user">
 		select *
 		from user
 	</select>

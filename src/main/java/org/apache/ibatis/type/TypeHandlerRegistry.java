@@ -57,7 +57,7 @@ import org.apache.ibatis.session.Configuration;
 public final class TypeHandlerRegistry {
 
     /**
-     * JDBC Type 和 {@link TypeHandler} 的映射
+     * JdbcType 和 {@link TypeHandler} 的映射
      *
      * {@link #register(JdbcType, TypeHandler)}
      */
@@ -65,9 +65,10 @@ public final class TypeHandlerRegistry {
     /**
      * {@link TypeHandler} 的映射
      *
-     * KEY1：Java Type
+     * KEY1：JavaType
      * VALUE1：{@link jdbcTypeHandlerMap} 对象，例如Date对应多种TypeHandler，所以采用Map
-     * KEY2：JDBC Type
+     *
+     * KEY2：JdbcType
      * VALUE2：{@link TypeHandler} 对象
      */
     private final Map<Type, Map<JdbcType, TypeHandler<?>>> typeHandlerMap = new ConcurrentHashMap<>();

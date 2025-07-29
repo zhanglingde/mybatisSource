@@ -21,7 +21,7 @@ import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.MappedStatement;
 
 /**
- * 在执行数据库更新操作时，需要通过 KeyGenerator 来进行前置处理或者后置处理，我一般用于自增主键
+ * 在执行数据库更新操作时，需要通过 KeyGenerator 来进行前置处理或者后置处理，一般用于自增主键
  *
  * @author Clinton Begin
  */

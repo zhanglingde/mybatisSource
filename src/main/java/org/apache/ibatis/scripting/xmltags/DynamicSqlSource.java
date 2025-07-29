@@ -41,6 +41,8 @@ public class DynamicSqlSource implements SqlSource {
     /**
      * 调用：MapperStatement#getBoundSql()
      *
+     * 将动态 sql 转换成可执行的静态 sql
+     *
      * @param parameterObject 参数对象
      * @return
      */
@@ -48,7 +50,7 @@ public class DynamicSqlSource implements SqlSource {
     public BoundSql getBoundSql(Object parameterObject) {
         // 1. 创建本次解析的动态 SQL 语句的上下文
         DynamicContext context = new DynamicContext(configuration, parameterObject);
-        // 2. 根据上下文应用整个 SqlNode
+        // 2. 根据上下文应用整个 SqlNode ,处理动态 SQL 标签（如 <if>, <choose>, <foreach> 等）
         rootSqlNode.apply(context);
         SqlSourceBuilder sqlSourceParser = new SqlSourceBuilder(configuration);
         Class<?> parameterType = parameterObject == null ? Object.class : parameterObject.getClass();
